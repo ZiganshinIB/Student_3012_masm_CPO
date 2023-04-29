@@ -1,0 +1,1669 @@
+Microsoft (R) Macro Assembler Version 6.14.8444		    04/29/23 18:24:54
+a.asm							     Page 1 - 1
+
+
+				include console.inc
+			      C .NOLIST
+			      C .LIST
+			      C ; Исключение из списка служебных слов
+			      C option NoKeyWord: <c name str>
+			      C 
+			      C 
+			      C 
+			      C 
+			      C ;include masm32.inc
+			      C 
+			      C    includelib masm32.lib
+			      C    includelib user32.lib
+			      C    includelib kernel32.lib
+			      C    includelib msvcrt.lib
+			      C    
+			      C 
+
+				COMMENT @
+
+					Ввод двух матриц, сложение матриц, вычитание матриц, умножение матриц, умножеие матрицы на число
+					Числа в матрицах двузначные знаковые, максимальное число элементов матрицы: 25
+					Тип ячеек в вводимых матрицах: 1 байт db -128 +127
+					Следовательно максимальный результат в одной ячейке при перемножении матриц: 99*99*25 = +-245025
+					
+					____________________________________________________________________________________
+					
+					умножение матриц
+					____________________________________________________________________________________
+					
+				@
+ 000002E1			.data
+ 000002E1 19				maxMatrElement  db 25 
+					
+ 000002E2  00000019 [			matr1 		dw 25 dup (0)		; Резервируем память под ПЕРВУЮ матрицу 25 элементов
+	    0000
+	   ]
+ 00000314 00				lines1 		db 0			; Количество строк в ПЕРВОЙ матрице
+ 00000315 00				columns1 	db 0			; Количество столбцов в ПЕРВОЙ матрице
+ 00000316 00				elements1 	db 0			; Количество элементов в ПЕРВОЙ матрице
+ 00000317  00000019 [			matr2 		dw 25 	dup (0)		; Резервируем память под ВТОРУЮ матрицу 25 элементов
+	    0000
+	   ]
+ 00000349 00				lines2 		db 0			; Количество строк во ВТОРОЙ матрице
+ 0000034A 00				columns2 	db 0			; Количество столбцов во ВТОРОЙ матрице
+ 0000034B 00				elements2 	db 0			; Количество элементов во ВТОРОЙ матрице
+ 0000034C 00				num 		db 0			; Число для умножения матрицы
+ 0000034D 00				num1 		db 0			; Число для умножения из ПЕРВОЙ матрицы
+ 0000034E 00				num2 		db 0			; Число для умножения из ВТОРОЙ матрицы
+ 0000034F 0000				num3 		dw 0			;
+ 00000351 00				act 		db 0			; Выбор действия над матрицами
+ 00000352  00000019 [			matr3 		dw 25 	dup (0)		; Резервируем память под ВТОРУЮ матрицу 25 элементов
+	    0000
+	   ]
+					
+ 00000384 00				counterI	db ?
+ 00000385 00				counterJ	db ?
+ 00000386 00				counterK	db ?	
+
+ 00000387 00				temp		db ?
+ 00000388 00				temp1		db ?
+ 00000389 00				temp2		db ?
+ 0000038A 00				temp3		db ?
+ 0000038B 00				index		db ?
+					
+ 0000038C 0000				wtemp		dw ?
+					
+ 0000038E 0000				sumIr		dw	?
+
+ 00000390 00				switch		db ?
+ 000003C0			.code
+
+
+ 000003C0			Start:
+					ClrScr
+ 000003CD  EB 00			jmp 		outOneMatrix;
+
+
+
+ 000003CF			outOneMatrix:
+					outstrln 'Числа в матрицах двузначные знаковые, максимальное число элементов матрицы: 25'
+					outstrln 'Введите количество строк ПЕРВОЙ матрицы'
+					inint 		lines1			
+					outstrln 'Введите количество столбцов ПЕРВОЙ матрицы'
+					inint 		columns1
+						
+ 0000060D  A0 00000314 R		mov 		al,lines1		
+ 00000612  F6 25 00000315 R		MUL 		columns1		; резултать умножения AL и columns1 = AX
+					
+					; Проверка больше или меньше значение если больше то повторяем
+ 00000618  66| 83 F8 19			cmp		ax, 25
+ 0000061C  0F 8F 00001214		jg		printOverMax1;	
+					;
+ 00000622  A2 00000316 R		mov 		elements1, al		
+					outstr 	       'Количество элементов ПЕРВОЙ матрицы: '
+					outwordln 	elements1
+					
+					outstrln 'Введите последовательно элементы ПЕРВОЙ матрицы'
+ 00000795  BB 00000000			mov ebx,0;
+ 0000079A  88 1D 00000384 R		mov counterI, bl
+ 000007A0  BA 00000002			mov edx,2;
+ 000007A5  88 15 00000387 R		mov temp, dl
+ 000007AB  B8 00000000			mov eax,0;
+
+ 000007B0				LOOP1:	
+ 000007B0  A0 00000384 R			mov		al, counterI
+ 000007B5  F6 25 00000387 R			MUL		temp
+						inint 		matr1[eax]
+ 000007DF  FE 05 00000384 R			inc 		counterI
+ 000007E5  8A 1D 00000384 R			mov		bl, counterI
+ 000007EB  3A 1D 00000316 R			CMP 		bl, elements1
+ 000007F1  7C BD				JL		LOOP1
+
+
+ 000007F3  EB 00			jmp printOneMatrix
+						
+					
+
+ 000007F5			printOneMatrix:
+					; columns1 	 lines1
+ 000007F5  BB 00000000			mov ebx,0;
+ 000007FA  88 1D 00000384 R		mov counterI, bl
+ 00000800  88 1D 00000385 R		mov counterJ, bl
+ 00000806  BA 00000002			mov edx,2;
+ 0000080B  88 15 00000387 R		mov temp, dl
+ 00000811  B8 00000000			mov eax,0;
+ 00000816  A2 00000388 R		mov temp1, al;
+					
+ 0000081B				printOneMatrixLOOPline:
+ 0000081B  BA 00000000				mov		edx, 0
+ 00000820  88 15 00000385 R			mov		counterJ,dl
+ 00000826  A0 00000384 R			MOV		al, counterI
+ 0000082B  F6 25 00000315 R			MUL		columns1
+ 00000831					printOneMatrixLOOPcolumns:
+ 00000831  A0 00000384 R				MOV		al, counterI
+ 00000836  F6 25 00000315 R				MUL		columns1
+ 0000083C  02 05 00000385 R				ADD	al, counterJ;
+ 00000842  F6 25 00000387 R				MUL	temp
+							outint matr1[eax], 8; matr1[(counterI*columns1+counterJ)*2]		
+ 00000866  FE 05 00000385 R				inc	counterJ
+ 0000086C  8A 15 00000385 R				mov	dl, counterJ
+ 00000872  3A 15 00000315 R				cmp	dl, columns1
+ 00000878  7C B7					jl	printOneMatrixLOOPcolumns
+						outstrln
+ 000008E5  FE 05 00000384 R			inc	counterI
+ 000008EB  8A 15 00000384 R			mov	dl, counterI
+ 000008F1  3A 15 00000314 R			cmp 	dl, lines1
+ 000008F7  0F 8C FFFFFF1E			jl  printOneMatrixLOOPline
+
+ 000008FD  EB 00			jmp		outTwoMatrix
+
+
+ 000008FF			outTwoMatrix:
+					outstrln 'Введите количество строк Второй матрицы'
+					inint 		lines2			
+					outstrln 'Введите количество столбцов Второй матрицы'
+					inint 		columns2
+						
+ 00000A95  A0 00000349 R		mov 		al,lines2		
+ 00000A9A  F6 25 0000034A R		MUL 		columns2		; резултать умножения AL и columns1 = AX
+					
+					; Проверка больше или меньше значение если больше то повторяем
+ 00000AA0  66| 83 F8 19			cmp		ax, 25
+ 00000AA4  0F 8F 00000E39		jg		printOverMax2;	
+					;
+ 00000AAA  A2 0000034B R		mov 		elements2, al		
+					outstr 	       'Количество элементов Второй матрицы: '
+					outwordln 	elements2
+					
+					outstrln 'Введите последовательно элементы Второй матрицы'
+ 00000C1D  BB 00000000			mov ebx,0;
+ 00000C22  88 1D 00000384 R		mov counterI, bl
+ 00000C28  BA 00000002			mov edx,2;
+ 00000C2D  88 15 00000387 R		mov temp, dl
+ 00000C33  B8 00000000			mov eax,0;
+
+ 00000C38				LOOP2:	
+ 00000C38  A0 00000384 R			mov		al, counterI
+ 00000C3D  F6 25 00000387 R			MUL		temp
+						inint 		matr2[eax]
+ 00000C67  FE 05 00000384 R			inc 		counterI
+ 00000C6D  8A 1D 00000384 R			mov		bl, counterI
+ 00000C73  3A 1D 00000316 R			CMP 		bl, elements1
+ 00000C79  7C BD				JL		LOOP2
+
+
+ 00000C7B  EB 00			jmp printTwoMatrix
+						
+					
+
+
+ 00000C7D				printTwoMatrix:
+ 00000C7D  B8 00000000				mov eax,0;
+ 00000C82  8A 1D 0000034A R			mov bl,columns2;
+ 00000C88  8A 3D 00000349 R			mov bh, lines2;
+ 00000C8E  C6 05 00000384 R			mov counterI, 0
+	   00
+ 00000C95  C6 05 00000387 R			mov temp, 2
+	   02
+ 00000C9C					printTwoMatrixLOOPline:
+ 00000C9C  C6 05 00000385 R				mov		counterJ, 0
+	   00
+ 00000CA3						printTwoMatrixLOOPcolumns:
+								outint matr2[eax], 8;
+ 00000CC1  83 C0 02						ADD		eax, 2
+ 00000CC4  FE 05 00000385 R					inc		counterJ;
+ 00000CCA  38 1D 00000385 R					cmp		counterJ, bl
+ 00000CD0  7C D1						jl	printTwoMatrixLOOPcolumns
+							outstrln
+ 00000D3D  FE 05 00000384 R				inc		counterI
+ 00000D43  38 3D 00000384 R				cmp 	counterI, bh
+ 00000D49  0F 8C FFFFFF4D				jl  printTwoMatrixLOOPline
+
+
+ 00000D4F  EB 00			jmp		printMenue
+
+
+
+ 00000D51			printMenue:
+					outstrln 'выберите пункты: '
+					outstrln
+					outstrln '1) Пересоздать массивы'
+					outstrln '2) +'
+					outstrln '3) -'
+					outstrln '4) *'
+					outstrln '5) х'
+					outstrln '6) end'
+					inint switch
+					
+ 00001277  B2 05			mov	dl, 5
+ 00001279  38 15 00000390 R		cmp	switch,dl
+ 0000127F  0F 8F FFFFFACC		jg	printMenue
+					
+ 00001285  B2 01			mov	dl, 1
+ 00001287  38 15 00000390 R		cmp	switch, dl
+ 0000128D  0F 8C FFFFFABE		jl	printMenue
+
+					
+ 00001293  38 15 00000390 R		cmp	switch, dl
+ 00001299  0F 84 FFFFF130		je	outOneMatrix
+					
+ 0000129F  B2 02			mov	dl, 2
+ 000012A1  38 15 00000390 R		cmp	switch, dl
+ 000012A7  74 3D			je	plusMatrix
+
+ 000012A9  B2 03			mov	dl, 3
+ 000012AB  38 15 00000390 R		cmp	switch, dl
+ 000012B1  0F 84 00000187		je	subMatrix
+
+ 000012B7  B2 04			mov	dl, 4
+ 000012B9  38 15 00000390 R		cmp	switch,dl
+ 000012BF  0F 84 000001FA		je	mulElementsMatrix
+					
+ 000012C5  B2 05			mov	dl, 5
+ 000012C7  38 15 00000390 R		cmp	switch, dl
+ 000012CD  0F 84 0000029D		je	mulMatrix
+					
+ 000012D3  B2 06			mov	dl, 6
+ 000012D5  38 15 00000390 R		cmp	switch ,dl
+ 000012DB  0F 84 0000072D		je	exete
+					
+ 000012E1  E9 00000728			jmp exete
+
+
+ 000012E6			plusMatrix:
+					; Сравниваем размерность матриц row == row and col == col
+ 000012E6  B8 00000000			mov 	eax, 0
+ 000012EB  A0 00000314 R		mov	al, lines1
+ 000012F0  8A 25 00000349 R		mov	ah, lines2 
+ 000012F6  32 C4			XOR	al, ah
+ 000012F8  8A 25 00000315 R		mov	ah, columns1
+ 000012FE  32 C4			XOR	al, ah
+ 00001300  8A 25 0000034A R		mov	ah, columns2
+ 00001306  32 C4			XOR	al, ah
+ 00001308  B2 00			mov	dl, 00000000b
+ 0000130A  88 15 00000387 R		mov	temp, dl
+ 00001310  3A 05 00000387 R		cmp	al, temp
+ 00001316  0F 85 FFFFFA35		JNE	printMenue
+					; ------------------------------------------------------
+ 0000131C  B8 00000000			mov eax, 0 ; Обнулим
+ 00001321  C6 05 00000384 R		mov counterI, 0;
+	   00
+ 00001328  8A 1D 00000316 R		mov bl, elements1;
+ 0000132E  C6 05 00000387 R		mov temp, 2;
+	   02
+ 00001335				plusMatrixLoop:
+						;matr[3]=matr1[i] + matr2[i]
+ 00001335  66| 8B 90				mov 	dx, matr1[eax]
+	   000002E2 R
+ 0000133C  66| 89 90				mov		matr3[eax], dx
+	   00000352 R
+ 00001343  66| 8B 90				mov 	dx, matr2[eax]
+	   00000317 R
+ 0000134A  66| 01 90				ADD		matr3[eax], dx
+	   00000352 R
+ 00001351  83 C0 02				ADD		eax, 2
+ 00001354  FE 05 00000384 R			inc		counterI;
+ 0000135A  38 1D 00000384 R			cmp		counterI, bl
+ 00001360  7C D3				JL		plusMatrixLoop
+					
+ 00001362				printThreMatrix:
+ 00001362  B8 00000000				mov eax,0;
+ 00001367  8A 1D 00000314 R			mov bl,lines1;
+ 0000136D  8A 3D 0000034A R			mov bh, columns2;
+ 00001373  C6 05 00000384 R			mov counterI, 0
+	   00
+ 0000137A  C6 05 00000387 R			mov temp, 2
+	   02
+ 00001381  A2 00000388 R			mov temp1, al;
+ 00001386					printThreMatrixLOOPline:
+ 00001386  C6 05 00000385 R				mov		counterJ, 0
+	   00
+ 0000138D						printThreMatrixLOOPcolumns:
+							; print(matrix[eax]); eax = eax + 2; counterI++
+								outint matr3[eax], 8;
+ 000013AB  83 C0 02						ADD		eax, 2
+ 000013AE  FE 05 00000385 R					inc		counterJ;
+ 000013B4  38 1D 00000385 R					cmp		counterJ, bl
+ 000013BA  7C D1						jl	printThreMatrixLOOPcolumns
+							outstrln
+ 00001427  FE 05 00000384 R				inc		counterI
+ 0000142D  38 3D 00000384 R				cmp 	counterI, bh
+ 00001433  0F 8C FFFFFF4D				jl  printThreMatrixLOOPline
+
+ 00001439  E9 FFFFF913			jmp		printMenue
+						
+						
+
+ 0000143E			subMatrix:
+					; Сравниваем размерность матриц row == row and col == col
+ 0000143E  B8 00000000			mov 	eax, 0
+ 00001443  A0 00000314 R		mov	al, lines1
+ 00001448  8A 25 00000349 R		mov	ah, lines2 
+ 0000144E  32 C4			XOR	al, ah
+ 00001450  8A 25 00000315 R		mov	ah, columns1
+ 00001456  32 C4			XOR	al, ah
+ 00001458  8A 25 0000034A R		mov	ah, columns2
+ 0000145E  32 C4			XOR	al, ah
+ 00001460  B2 00			mov	dl, 00000000b
+ 00001462  88 15 00000387 R		mov	temp, dl
+ 00001468  3A 05 00000387 R		cmp	al, temp
+ 0000146E  0F 85 FFFFF8DD		JNE	printMenue
+					; ------------------------------------------------------
+ 00001474  B8 00000000			mov eax, 0 ; Обнулим
+ 00001479  C6 05 00000384 R		mov counterI, 0;
+	   00
+ 00001480  8A 1D 00000316 R		mov bl, elements1;
+ 00001486  C6 05 00000387 R		mov temp, 2;
+	   02
+ 0000148D				subMatrixLoop:
+						;matr[3]=matr1[i] - matr2[i]
+ 0000148D  66| 8B 90				mov 	dx, matr1[eax]
+	   000002E2 R
+ 00001494  66| 89 90				mov		matr3[eax], dx
+	   00000352 R
+ 0000149B  66| 8B 90				mov 	dx, matr2[eax]
+	   00000317 R
+ 000014A2  66| 29 90				SUB		matr3[eax], dx
+	   00000352 R
+ 000014A9  83 C0 02				ADD		eax, 2
+ 000014AC  FE 05 00000384 R			inc		counterI;
+ 000014B2  38 1D 00000384 R			cmp		counterI, bl
+ 000014B8  7C D3				JL		subMatrixLoop
+ 000014BA  E9 FFFFFEA3				jmp 	printThreMatrix
+						
+
+ 000014BF			mulElementsMatrix:
+					; Сравниваем размерность матриц row == row and col == col
+ 000014BF  B8 00000000			mov 	eax, 0
+ 000014C4  A0 00000314 R		mov	al, lines1
+ 000014C9  8A 25 00000349 R		mov	ah, lines2 
+ 000014CF  32 C4			XOR	al, ah
+ 000014D1  8A 25 00000315 R		mov	ah, columns1
+ 000014D7  32 C4			XOR	al, ah
+ 000014D9  8A 25 0000034A R		mov	ah, columns2
+ 000014DF  32 C4			XOR	al, ah
+ 000014E1  B2 00			mov	dl, 00000000b
+ 000014E3  88 15 00000387 R		mov	temp, dl
+ 000014E9  3A 05 00000387 R		cmp	al, temp
+ 000014EF  0F 85 FFFFF85C		JNE	printMenue
+					; ------------------------------------------------------
+ 000014F5  B8 00000000			mov eax, 0 ; Обнулим
+ 000014FA  C6 05 00000384 R		mov counterI, 0;
+	   00
+ 00001501  C6 05 00000385 R		mov counterJ, 0;
+	   00
+ 00001508  8A 1D 00000316 R		mov bl, elements1;
+ 0000150E  66| C7 05			mov wtemp, 0;
+	   0000038C R
+	   0000
+ 00001517				mulElementsMatrixLoop:
+						;matr[3]=matr1[i] - matr2[i]
+ 00001517  A0 00000385 R			mov 	al, counterJ;
+						; temp = matr1[i]
+						; eax = i*2
+ 0000151C  66| 8B 90				mov 	dx, matr1[eax]
+	   000002E2 R
+ 00001523  66| 89 15				mov		wtemp, dx
+	   0000038C R
+						; eax = matr2[eax]
+ 0000152A  66| 8B 80				mov 	ax, matr2[eax]
+	   00000317 R
+						; wtemp = matr2[eax] * wtemp
+ 00001531  66| F7 25				MUL		wtemp;
+	   0000038C R
+ 00001538  66| A3				mov 	wtemp, ax;
+	   0000038C R
+ 0000153E  A0 00000385 R			mov		al, counterJ;
+ 00001543  66| 8B 15				mov 	dx, wtemp;
+	   0000038C R
+ 0000154A  66| 89 90				mov		matr3[eax], dx; 
+	   00000352 R
+ 00001551  80 05 00000385 R			ADD		counterJ,2
+	   02
+ 00001558  FE 05 00000384 R			inc		counterI;
+ 0000155E  38 1D 00000384 R			cmp		counterI, bl
+ 00001564  7C B1				JL		mulElementsMatrixLoop
+ 00001566  E9 FFFFFDF7				jmp 	printThreMatrix	
+ 0000156B  E9 FFFFF7E1			jmp	printMenue
+
+ 00001570			mulMatrix:
+					; Сравниваем размерность матриц row == col and col == row
+ 00001570  B8 00000000			mov 	eax, 0
+ 00001575  A0 00000315 R		mov	al, columns1
+ 0000157A  3A 05 00000349 R		cmp	al, lines2
+ 00001580  0F 85 FFFFF7CB		JNE	printMenue
+					; ------------------------------------------------------
+ 00001586  B8 00000000			mov eax, 0 ; Обнулим
+ 0000158B  BA 00000000			mov edx, 0 ;
+ 00001590  C6 05 00000384 R		mov counterI, 0;
+	   00
+					
+					
+ 00001597  C6 05 0000038B R		mov index, 0;
+	   00
+ 0000159E  C6 05 00000387 R		mov temp,  2
+	   02
+ 000015A5  C6 05 00000388 R		mov temp1, 0;
+	   00
+ 000015AC  66| C7 05			mov wtemp, 0;
+	   0000038C R
+	   0000
+ 000015B5				mulMatrixLoop1:
+ 000015B5  C6 05 00000385 R			mov counterJ, 0;
+	   00
+ 000015BC					mulMatrixLoop2:
+ 000015BC  66| C7 05					mov sumIr, 0;
+	   0000038E R
+	   0000
+ 000015C5  C6 05 00000386 R				mov counterK, 0;
+	   00
+ 000015CC						mulMatrixLoop3:
+ 000015CC  B8 00000000						mov	eax, 0;
+								; m1[1][1]*m2[1][1] + m1[1][2]*m2[2][1].... 
+								; wtemp = m1[1*lines1+1]* m1[2*lines2+1] + m1[1*lines1+2]*m2[2*lines2+1]......
+								; wtemp - is sumator
+								; eax =  counterI*lines1+counterJ ; || bl=counterI ; eax = bl * lines1; bl = bl+counterJ
+ 000015D1  A0 00000384 R					mov 	al, counterI;
+ 000015D6  F6 25 00000315 R					MUL		columns1;
+ 000015DC  02 05 00000386 R					add 	al, counterK;
+ 000015E2  F6 25 00000387 R					MUL		temp
+								; mov 	index, al
+ 000015E8  66| 8B 80						mov		ax, matr1[eax]
+	   000002E2 R
+								outint ax;
+ 00001609  66| A3						mov		wtemp, ax ; matr1[index]
+	   0000038C R
+								
+								; wtemp = m1[ebx]
+								; eax =  counterJ*lines2+counterI ; || eax=counterJ ; eax = eax * lines2
+								; dx = wtemp
+								; dx + m2[eax]
+ 0000160F  A0 00000386 R					mov 	al, counterK;
+ 00001614  F6 25 0000034A R					MUL		columns2;
+ 0000161A  02 05 00000385 R					add 	al, counterJ;
+ 00001620  F6 25 00000387 R					MUL		temp
+ 00001626  66| 8B 80						mov 	ax, matr2[eax]
+	   00000317 R
+								outstr '*';
+								outint 	ax;
+ 00001684  66| F7 25						MUL		wtemp;
+	   0000038C R
+								outstr '=';
+								outint 	ax;
+								outstrln ;
+ 0000174D  66| 01 05						ADD 	sumIr, ax;
+	   0000038E R
+								
+								
+ 00001754  FE 05 00000386 R					inc counterK
+ 0000175A  8A 1D 00000386 R					mov bl, counterK;
+ 00001760  3A 1D 00000315 R					cmp bl, columns1
+ 00001766  0F 8C FFFFFE60					JL	mulMatrixLoop3;
+								;-------------------------------------------
+							outstrln
+ 000017D7  B8 00000000					mov		eax, 0;
+ 000017DC  A0 00000384 R				mov 	al, counterI;
+ 000017E1  F6 25 0000034A R				MUL		columns2;
+ 000017E7  02 05 00000385 R				add 	al, counterJ;
+ 000017ED  F6 25 00000387 R				MUL		temp
+ 000017F3  66| 8B 15					mov		dx, sumIr;
+	   0000038E R
+ 000017FA  66| 89 90					mov 	matr3[eax], dx;
+	   00000352 R
+							
+							
+ 00001801  FE 05 00000385 R				inc counterJ
+ 00001807  8A 1D 00000385 R				mov bl, counterJ;
+ 0000180D  3A 1D 0000034A R				cmp bl, columns2 ; j < columns2
+ 00001813  0F 8C FFFFFDA3				JL	mulMatrixLoop2;
+						
+ 00001819  FE 05 00000384 R			inc counterI
+ 0000181F  8A 1D 00000384 R			mov bl, counterI;
+ 00001825  3A 1D 00000314 R			cmp bl, lines1
+ 0000182B  0F 8C FFFFFD84			JL	mulMatrixLoop1;
+ 00001831  E9 FFFFFB2C				jmp printThreMatrix
+
+
+					
+					
+
+
+ 00001836			printOverMax1:
+					outstrln		'Кол-во элиментов больше'
+ 000018DE  E9 FFFFEAEC			jmp			outOneMatrix;
+
+
+ 000018E3			printOverMax2:
+					outstrln		'Кол-во элиментов больше'
+ 0000198B  E9 FFFFEF6F			jmp			outTwoMatrix;
+					
+
+ 00001990			printBig:
+					outstr		'Это больше'
+ 000019CD  EB 3F			jmp		exete			;
+ 000019CF			printLitle:
+					outstr		'Это больше'
+ 00001A0C  EB 00			jmp		exete			;
+ 00001A0E			exete:
+					exit
+					end Start
+						
+
+
+				COMMENT @
+
+
+
+					mov 		elements1,al		; Записываем количество элементов ПЕРВОЙ матрицы
+					
+					
+					outstrln 'Введите последовательно элементы ПЕРВОЙ матрицы'
+					mov bl,elements1; Записываем в региср bl количество элементов ПЕРВОЙ матрицы
+					mov eax,0; Записываем в региср esi номер элемента ПЕРВОЙ матрицы
+						CIKL1:
+						inint matr1[eax]; Записываем элемент в массив
+						INC eax; Сдвигаем адрес для записи следующего элемента массива
+						DEC bl; Уменьшаем счетчик количества элементов ПЕРВОЙ матрицы
+						CMP bl,0; Проверяем, не ввели ли все элементы ПЕРВОЙ матрицы
+						JG CIKL1; Если ввели не все элементы ПЕРВОЙ матрицы, то повторяем цикл
+					
+					outstrln 'ПЕРВАЯ матрица'; Вывод ПЕРВОЙ матрицы
+					mov eax,0; обнуляем счетчики
+					mov edx,0; обнуляем счетчики
+					mov ecx,0; обнуляем счетчики
+					mov cl,columns1; Записываем в регистр ecx количество столбццов матрицы
+					sub edx,ecx; Указываем на индекс первой строки матрицы (уменьшаем индекс строки на количесвто элементов в строке * тип элементов)
+					L2:
+					mov ebx,-1; Указываем на певый столбец матрицы
+					add edx,ecx; Переходим на следующий индекс строки матрицы (увеличиваем индекс строки на количесвто элементов в строке * тип элементов)
+					L1:
+					inc ebx; Переходим на следующий столбец в строке матрицы
+					outint matr1[ebx+edx],8; Выводим элемент матрицы
+					mov al,bl; Записываем в регистр al номер столбца (bl)
+					inc al;Увеличиваем его для сравнения
+					cmp al, columns1; Проверяем, не дошли ли до конца строки
+						JL L1; Если не дошли до конца строки, то продолжаем выводить элементы
+					newline
+					mov eax,edx; Записываем в регистр eax индекс строки (edx)
+					DIV cl; Делим индекс строки на количество элементов, для получения номера строки
+					inc al;Увеличиваем его для сравнения
+					cmp al, lines1; Проверяем, не дошли ли до последней строки в матрице
+						JL L2; Если не дошли до последней строки в матрице, то продолжаем выводить элементы
+					
+					outstrln 'Введите количество строк ВТОРОЙ матрицы'
+					inint lines2; Ввод количества строк ВТОРОЙ матрицы
+					outstrln 'Введите количество столбцов ВТОРОЙ матрицы'
+					inint columns2; Ввод количества столбцов ВТОРОЙ матрицы
+					mov al,lines2
+					MUL columns2; Умножаем строки на столбцы и получаем количество элементов ВТОРОЙ матрицы
+					mov elements2,al; Записываем количество элементов ВТОРОЙ матрицы
+					outstr 'Количество элементов ВТОРОЙ матрицы: '
+					outwordln elements2; Выводим количество элементов ВТОРОЙ матрицы
+					
+					outstrln 'Введите последовательно элементы ВТОРОЙ матрицы'
+					mov bl,elements2; Записываем в региср bl количество элементов ВТОРОЙ матрицы
+					mov eax,0; Записываем в региср esi номер элемента ВТОРОЙ матрицы
+						CIKL2:
+						inint matr2[eax]; Записываем элемент в массив
+						INC eax; Сдвигаем адрес для записи следующего элемента массива
+						DEC bl; Уменьшаем счетчик количества элементов ВТОРОЙ матрицы
+						CMP bl,0; Проверяем, не ввели ли все элементы ВТОРОЙ матрицы
+						JG CIKL2; Если ввели не все элементы ВТОРОЙ матрицы, то повторяем цикл
+					
+					outstrln 'ВТОРАЯ матрица'; Вывод ВТОРОЙ матрицы
+					mov eax,0; обнуляем счетчики
+					mov edx,0; обнуляем счетчики
+					mov ecx,0; обнуляем счетчики
+					mov cl,columns2; Записываем в регистр ecx количество столбццов матрицы
+					sub edx,ecx; Указываем на индекс первой строки матрицы (уменьшаем индекс строки на количесвто элементов в строке * тип элементов)
+					L4:
+					mov ebx,-1; Указываем на певый столбец матрицы
+					add edx,ecx; Переходим на следующий индекс строки матрицы (увеличиваем индекс строки на количесвто элементов в строке * тип элементов)
+					L3:
+					inc ebx; Переходим на следующий столбец в строке матрицы
+					outint matr2[ebx+edx],8; Выводим элемент матрицы
+					mov al,bl; Записываем в регистр al номер столбца (bl)
+					inc al;Увеличиваем его для сравнения
+					cmp al, columns2; Проверяем, не дошли ли до конца строки
+						JL L3; Если не дошли до конца строки, то продолжаем выводить элементы
+					newline
+					mov eax,edx; Записываем в регистр eax индекс строки (edx)
+					DIV cl; Делим индекс строки на количество элементов, для получения номера строки
+					inc al;Увеличиваем его для сравнения
+					cmp al, lines2; Проверяем, не дошли ли до последней строки в матрице
+						JL L4; Если не дошли до последней строки в матрице, то продолжаем выводить элементы
+				;____________________________________________________________________________________	
+
+				ACTCHOISE:
+					outstrln 'Выберите необходимое действие, введите номер варианта:'
+					outstrln '1) Сложение матриц'
+					outstrln '2) Вычитание матриц'
+					outstrln '3) Умножение матриц. Будет умножена ПЕРВАЯ матрица на ВТОРУЮ'
+					outstrln '4) Умножение матрицы на число. Будет умножена ПЕРВАЯ матрица на число'
+					outstrln '5) Выход'
+					inint act; Выбирается действие
+					cmp act,1; Если выбрано сложение
+						je ADDITION; Переходим к сложению
+					cmp act,2; Если выбрано вычитание
+						je SUBTRACTION; Переходим к вычитанию
+					cmp act,3; Если выбрано перемножение
+						je MULTIPLICATION; Переходим к перемножению
+					cmp act,4; Если выбрано умножение на число
+						je NUMMULTIPLICATION; Переходим к умножение на число
+					cmp act,5; Если выбран выход
+						je FINISH; Переходим к выходу
+					outstrln 'Неверный выбор'; Если введено не число от 1 до 5 то выводим ошибку и начинаем с начала
+					jmp ACTCHOISE
+					
+				ADDITION:
+					newline
+					outstrln '1) Сложение матриц'
+					mov eax,0; обнуляем счетчики
+					mov edx,0; обнуляем счетчики
+					mov ecx,0; обнуляем счетчики
+					mov cl,columns1; Т.к. матрицы одинакового размера записываем в регистр ecx количество столбццов матрицы
+					sub edx,ecx; Указываем на индекс первой строки матрицы (уменьшаем индекс строки на количесвто элементов в строке * тип элементов)
+					L6:
+					mov ebx,-1; Указываем на певый столбец матрицы
+					add edx,ecx; Переходим на следующий индекс строки матрицы (увеличиваем индекс строки на количесвто элементов в строке * тип элементов)
+					L5:
+					inc ebx; Переходим на следующий столбец в строке матрицы
+					mov al,matr1[ebx+edx]; Записываем в регистр al элемент первой матрицы для сложения
+					add al,matr2[ebx+edx]; Складываем элементы первой и второй матрицы
+					outint al,8; Выводим элемент матрицы
+					mov eax,ebx; Записываем в регистр eax номер столбца (ebx)
+					inc al;Увеличиваем его для сравнения
+					cmp al, columns2; Проверяем, не дошли ли до конца строки
+						JL L5; Если не дошли до конца строки, то продолжаем выводить элементы
+					newline
+					mov eax,edx; Записываем в регистр eax индекс строки (edx)
+					DIV cl; Делим индекс строки на количество элементов, для получения номера строки
+					inc al;Увеличиваем его для сравнения
+					cmp al, lines2; Проверяем, не дошли ли до последней строки в матрице
+						JL L6; Если не дошли до последней строки в матрице, то продолжаем выводить элементы
+					jmp ACTCHOISE
+
+				SUBTRACTION:
+					newline
+					outstrln '2) Вычитание матриц'
+					outstrln 'Введите 1 чтобы вычесть ВТОРУЮ матрицу из ПЕРВОЙ'
+					outstrln 'Введите 2 чтобы вычесть ПЕРВУЮ матрицу из ВТОРОЙ'
+					inint si; Выбираем какую матрицу из какой будем вычитать
+					mov eax,0; обнуляем счетчики
+					mov edx,0; обнуляем счетчики
+					mov ecx,0; обнуляем счетчики
+					mov cl,columns1; Т.к. матрицы одинакового размера записываем в регистр ecx количество столбццов матрицы
+					sub edx,ecx; Указываем на индекс первой строки матрицы (уменьшаем индекс строки на количесвто элементов в строке * тип элементов)
+					L8:
+					mov ebx,-1; Указываем на певый столбец матрицы
+					add edx,ecx; Переходим на следующий индекс строки матрицы (увеличиваем индекс строки на количесвто элементов в строке * тип элементов)
+					L7:
+					inc ebx; Переходим на следующий столбец в строке матрицы
+					cmp si,1; Смотрим какую матрицу из какой будем вычитать
+						je M1SUBM2
+					jmp M2SUBM1
+				M1SUBM2:
+					mov al,matr1[ebx+edx]; Записываем в регистр al элемент первой матрицы для вычитания
+					sub al,matr2[ebx+edx]; Вычитаем элементы второй из первой матрицы
+					outint al,8; Выводим элемент матрицы
+					jmp CIKL3
+				M2SUBM1:
+					mov al,matr2[ebx+edx]; Записываем в регистр al элемент второй матрицы для вычитания
+					sub al,matr1[ebx+edx]; Вычитаем элементы первой из второй матрицы
+					outint al,8; Выводим элемент матрицы
+					jmp CIKL3
+				CIKL3:
+					mov eax,ebx; Записываем в регистр eax номер столбца (ebx)
+					inc al;Увеличиваем его для сравнения
+					cmp al, columns2; Проверяем, не дошли ли до конца строки
+						JL L7; Если не дошли до конца строки, то продолжаем выводить элементы
+					newline
+					mov eax,edx; Записываем в регистр eax индекс строки (edx)
+					DIV cl; Делим индекс строки на количество элементов, для получения номера строки
+					inc al;Увеличиваем его для сравнения
+					cmp al, lines2; Проверяем, не дошли ли до последней строки в матрице
+						JL L8; Если не дошли до последней строки в матрице, то продолжаем выводить элементы
+					jmp ACTCHOISE
+					
+				MULTIPLICATION:
+					newline
+					outstrln '3) Умножение матриц'
+					outstrln 'Будет умножена ПЕРВАЯ матрица на ВТОРУЮ'
+
+				; lines1 columns2
+					
+					mov edi,0
+					mov eax,0; обнуляем счетчики
+					mov edx,0; обнуляем счетчики
+					mov ecx,0; обнуляем счетчики
+					mov cl,columns1; Записываем в регистр ecx количество столбццов матрицы
+					sub edx,ecx; Указываем на индекс первой строки матрицы (уменьшаем индекс строки на количесвто элементов в строке * тип элементов)
+					L12:
+					mov ebx,-1; Указываем на певый столбец матрицы
+					add edx,ecx; Переходим на следующий индекс строки матрицы (увеличиваем индекс строки на количесвто элементов в строке * тип элементов)
+					L11:
+					inc ebx; Переходим на следующий столбец в строке матрицы
+					mov num1,matr1[ebx+edx]; Записываем в num1 элемент из ПЕРВОЙ матрицы для умножения
+					
+					mov eax,0
+					mov eax,ebx
+					dec eax
+					mul columns2; записали в ax индекс строки элемента 2 матрицы
+					mov esi,edx; Записали в esi индекс столбца ВТОРОЙ матрицы
+					mov num2,matr2[eax,esi]; Записываем в num2 элемент из ВТОРОЙ матрицы для умножения
+					mov al,num1
+					mul num2; умножаем num1*num2
+					add num3,ax; складываем перемноженные значения
+					
+					mov al,bl; Записываем в регистр al номер столбца (bl)
+					inc al;Увеличиваем его для сравнения
+					cmp al, columns1; Проверяем, не дошли ли до конца строки
+						JL L11; Если не дошли до конца строки, то продолжаем выводить элементы
+					outint num3,8; выводим символ
+					mov num3,0
+					cmp edi,
+					mov eax,edx; Записываем в регистр eax индекс строки (edx)
+					DIV cl; Делим индекс строки на количество элементов, для получения номера строки
+					inc al;Увеличиваем его для сравнения
+					cmp al, lines2; Проверяем, не дошли ли до последней строки в матрице
+						JL L12; Если не дошли до последней строки в матрице, то продолжаем выводить элементы
+					
+
+					jmp ACTCHOISE
+
+				NUMMULTIPLICATION:
+					newline
+					outstrln '4) Умножение матрицы на число'
+					outstrln 'Будет умножена ПЕРВАЯ матрица на число'
+					outstrln 'Введите число от 1 до 100, на которое будет умножена матрица'
+					inint num; Вводим число, на которое будем умножать матрицу
+					mov eax,0; обнуляем счетчики
+					mov edx,0; обнуляем счетчики
+					mov ecx,0; обнуляем счетчики
+					mov cl,columns1; Записываем в регистр ecx количество столбцов матрицы
+					sub edx,ecx; Указываем на индекс первой строки матрицы (уменьшаем индекс строки на количесвто элементов в строке * тип элементов)
+					L10:
+					mov ebx,-1; Указываем на певый столбец матрицы
+					add edx,ecx; Переходим на следующий индекс строки матрицы (увеличиваем индекс строки на количесвто элементов в строке * тип элементов)
+					L9:
+					inc ebx; Переходим на следующий столбец в строке матрицы
+					mov al,matr1[ebx+edx]; Записываем в регистр al элемент из матрицы для умножения
+					cmp al,0; Проверяем не отрицательное ли число
+						jg POSITIV; Если положительное то прыгаем на метку POSITIV
+					neg al; Если отрицательное, тогда делаем его положительным
+					mul num; Умножаем элемент матрицы на число
+					neg ax; Делаем число отрицательным
+					outint ax,8; Выводим элемент матрицы
+					jmp NEGATIVE
+				POSITIV:
+					mul num; Умножаем элемент матрицы на число
+					outint ax,8; Выводим элемент матрицы
+				NEGATIVE:
+					mov al,bl; Записываем в регистр al номер столбца (bl)
+					inc al;Увеличиваем его для сравнения
+					cmp al, columns1; Проверяем, не дошли ли до конца строки
+						JL L9; Если не дошли до конца строки, то продолжаем выводить элементы
+					newline
+					mov eax,edx; Записываем в регистр eax индекс строки (edx)
+					DIV cl; Делим индекс строки на количество элементов, для получения номера строки
+					inc al;Увеличиваем его для сравнения
+					cmp al, lines1; Проверяем, не дошли ли до последней строки в матрице
+						JL L10; Если не дошли до последней строки в матрице, то продолжаем выводить элементы
+					jmp ACTCHOISE
+					
+					Ввод двух матриц, сложение матриц, вычитание матриц, умножение матриц, умножеие матрицы на число
+					Числа в матрицах двузначные знаковые, максимальное число элементов матрицы: 25
+					Тип ячеек в вводимых матрицах: 1 байт db -128 +127
+					Следовательно максимальный результат в одной ячейке при перемножении матриц: 99*99*25 = +-245025
+					
+					____________________________________________________________________________________
+					
+					умножение матриц
+					____________________________________________________________________________________
+					
+				@
+
+	
+Microsoft (R) Macro Assembler Version 6.14.8444		    04/29/23 18:24:54
+a.asm							     Symbols 2 - 1
+
+
+
+
+Macros:
+
+                N a m e                 Type
+
+??CheckStrToBuf  . . . . . . . .	Proc
+??FindESP  . . . . . . . . . . .	Proc
+??RestoreReg . . . . . . . . . .	Proc
+??SaveReg  . . . . . . . . . . .	Proc
+@GetCommandLine  . . . . . . . .	Func
+@Random  . . . . . . . . . . . .	Func
+@inchar  . . . . . . . . . . . .	Func
+@inintln . . . . . . . . . . . .	Func
+@inint . . . . . . . . . . . . .	Func
+@readkey . . . . . . . . . . . .	Func
+ChagePageAttr  . . . . . . . . .	Proc
+ClrScr . . . . . . . . . . . . .	Proc
+ConsoleMode  . . . . . . . . . .	Proc
+ConsoleTitle . . . . . . . . . .	Proc
+DOS  . . . . . . . . . . . . . .	Func
+DownloadFile . . . . . . . . . .	Proc
+GetConsoleTitle  . . . . . . . .	Proc
+HeapBlockSize  . . . . . . . . .	Proc
+InputStr . . . . . . . . . . . .	Proc
+MsgBox . . . . . . . . . . . . .	Proc
+NewConsole . . . . . . . . . . .	Proc
+OpenFile . . . . . . . . . . . .	Proc
+OutFlags . . . . . . . . . . . .	Proc
+Randomize  . . . . . . . . . . .	Proc
+RunExe . . . . . . . . . . . . .	Proc
+SetScreenSize  . . . . . . . . .	Proc
+SetTextAttr  . . . . . . . . . .	Proc
+TotalHeapAllocated . . . . . . .	Proc
+WhereX . . . . . . . . . . . . .	Proc
+WhereY . . . . . . . . . . . . .	Proc
+dispose  . . . . . . . . . . . .	Proc
+exit . . . . . . . . . . . . . .	Proc
+flush  . . . . . . . . . . . . .	Proc
+gotoXY . . . . . . . . . . . . .	Proc
+inchar . . . . . . . . . . . . .	Proc
+inintln  . . . . . . . . . . . .	Proc
+inint  . . . . . . . . . . . . .	Proc
+newline  . . . . . . . . . . . .	Proc
+new  . . . . . . . . . . . . . .	Proc
+outcharln  . . . . . . . . . . .	Proc
+outchar  . . . . . . . . . . . .	Proc
+outdateln  . . . . . . . . . . .	Proc
+outdate  . . . . . . . . . . . .	Proc
+outintln . . . . . . . . . . . .	Proc
+outint . . . . . . . . . . . . .	Proc
+outnumln . . . . . . . . . . . .	Proc
+outnum . . . . . . . . . . . . .	Proc
+outstrln . . . . . . . . . . . .	Proc
+outstr . . . . . . . . . . . . .	Proc
+outtimeln  . . . . . . . . . . .	Proc
+outtime  . . . . . . . . . . . .	Proc
+outwordln  . . . . . . . . . . .	Proc
+outword  . . . . . . . . . . . .	Proc
+pause  . . . . . . . . . . . . .	Proc
+readkey  . . . . . . . . . . . .	Proc
+
+
+Structures and Unions:
+
+                N a m e                  Size
+                                         Offset      Type
+
+CONSOLE_SCREEN_BUFFER_INFO . . .	 00000016
+  dwSize . . . . . . . . . . . .	 00000000	 DWord
+  dwCursorPosition . . . . . . .	 00000004	 DWord
+  wAttributes  . . . . . . . . .	 00000008	 Word
+  srWindow . . . . . . . . . . .	 0000000A	 QWord
+  dwMaximumWindowSize  . . . . .	 00000012	 DWord
+COORD  . . . . . . . . . . . . .	 00000004
+  x  . . . . . . . . . . . . . .	 00000000	 Word
+  y  . . . . . . . . . . . . . .	 00000002	 Word
+SMALL_RECT . . . . . . . . . . .	 00000008
+  Left . . . . . . . . . . . . .	 00000000	 Word
+  Top  . . . . . . . . . . . . .	 00000002	 Word
+  Right  . . . . . . . . . . . .	 00000004	 Word
+  Bottom . . . . . . . . . . . .	 00000006	 Word
+SystemTime . . . . . . . . . . .	 00000010
+  wYear  . . . . . . . . . . . .	 00000000	 Word
+  wMonth . . . . . . . . . . . .	 00000002	 Word
+  wDayOfWeek . . . . . . . . . .	 00000004	 Word
+  wDay . . . . . . . . . . . . .	 00000006	 Word
+  wHour  . . . . . . . . . . . .	 00000008	 Word
+  wMinute  . . . . . . . . . . .	 0000000A	 Word
+  wSecond  . . . . . . . . . . .	 0000000C	 Word
+  wMilliseconds  . . . . . . . .	 0000000E	 Word
+
+
+Types:
+
+                N a m e                  Size     Attr
+
+c_msvcrt . . . . . . . . . . . .	 00000004     CODE 
+params4  . . . . . . . . . . . .	 00000004     CODE 
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+FLAT . . . . . . . . . . . . . .	GROUP
+STACK  . . . . . . . . . . . . .	32 Bit	 00001000 Para	  Stack	  'STACK'	 
+_DATA  . . . . . . . . . . . . .	32 Bit	 000022FF Para	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 00001A16 Para	  Public  'CODE'	
+
+
+Procedures,  parameters and locals:
+
+                N a m e                 Type     Value    Attr
+
+CharToOemA . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ClearScreen  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+CloseHandle  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+CreateFileA  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ExitProcess  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetCommandLineA  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetConsoleScreenBufferInfo . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetConsoleTitleA . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetModuleHandleA . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetStdHandle . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetSystemMetrics . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetSystemTime  . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetTickCount . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GlobalAlloc  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GlobalFree . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GlobalSize . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+InternetGetConnectedState  . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+MessageBoxIndirectA  . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleCtrlHandler  . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleCursorPosition . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleScreenBufferSize . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleTextAttribute  . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleTitleA . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Sleep  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+StdIn  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+StdOut . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+URLDownloadToFileA . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+VirtualProtect . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WinToDos . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 00000032 Public STDCALL
+  @L . . . . . . . . . . . . . .	L Near	 00000003 _TEXT	
+  @L2  . . . . . . . . . . . . .	L Near	 0000002A _TEXT	
+  @Voz . . . . . . . . . . . . .	L Near	 0000002F _TEXT	
+inint_proc . . . . . . . . . . .	P Near	 00000032 _TEXT	Length= 0000038E Public STDCALL
+  @MM  . . . . . . . . . . . . .	L Near	 0000004C _TEXT	
+  @@KOH1 . . . . . . . . . . . .	L Near	 000001CB _TEXT	
+  @@KOH  . . . . . . . . . . . .	L Near	 000001D2 _TEXT	
+  @VOZ . . . . . . . . . . . . .	L Near	 000001FA _TEXT	
+  @@Error  . . . . . . . . . . .	L Near	 000001FE _TEXT	
+  ??0005 . . . . . . . . . . . .	L Near	 0000023E _TEXT	
+  ??000D . . . . . . . . . . . .	L Near	 00000271 _TEXT	
+  ??000E . . . . . . . . . . . .	L Near	 000002A5 _TEXT	
+  @@Error1 . . . . . . . . . . .	L Near	 000002DF _TEXT	
+  ??0014 . . . . . . . . . . . .	L Near	 0000031F _TEXT	
+  ??001C . . . . . . . . . . . .	L Near	 00000352 _TEXT	
+  ??001D . . . . . . . . . . . .	L Near	 00000386 _TEXT	
+nrandom  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+nseed  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+shell_ex . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+shell  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+wait_key . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+??0000 . . . . . . . . . . . . .	Byte	 00000054 _DATA	
+??0001 . . . . . . . . . . . . .	Byte	 00000025 _DATA	
+??0002 . . . . . . . . . . . . .	Text   	 "
+??0003 . . . . . . . . . . . . .	Byte	 00000024 _DATA	
+??0006 . . . . . . . . . . . . .	Number	 00000000h   
+??0007 . . . . . . . . . . . . .	Byte	 00000057 _DATA	
+??0009 . . . . . . . . . . . . .	Byte	 00000186 _DATA	
+??000A . . . . . . . . . . . . .	Byte	 0000005A _DATA	
+??000B . . . . . . . . . . . . .	Text   	 o
+??000C . . . . . . . . . . . . .	Byte	 00000059 _DATA	
+??000F . . . . . . . . . . . . .	Byte	 000001AC _DATA	
+??0010 . . . . . . . . . . . . .	Byte	 0000018A _DATA	
+??0011 . . . . . . . . . . . . .	Text   	 "
+??0012 . . . . . . . . . . . . .	Byte	 00000189 _DATA	
+??0015 . . . . . . . . . . . . .	Number	 00000000h   
+??0016 . . . . . . . . . . . . .	Byte	 000001AF _DATA	
+??0018 . . . . . . . . . . . . .	Byte	 000002DE _DATA	
+??0019 . . . . . . . . . . . . .	Byte	 000001B2 _DATA	
+??001A . . . . . . . . . . . . .	Text   	 o
+??001B . . . . . . . . . . . . .	Byte	 000001B1 _DATA	
+??001E . . . . . . . . . . . . .	Byte	 000003E1 _DATA	
+??001F . . . . . . . . . . . . .	Byte	 00000392 _DATA	
+??0020 . . . . . . . . . . . . .	Text   	 "
+??0021 . . . . . . . . . . . . .	Byte	 00000391 _DATA	
+??0023 . . . . . . . . . . . . .	L Near	 000003F8 _TEXT	
+??0024 . . . . . . . . . . . . .	Number	 00000000h   
+??0025 . . . . . . . . . . . . .	Byte	 000003E4 _DATA	
+??0027 . . . . . . . . . . . . .	Byte	 00000513 _DATA	
+??0028 . . . . . . . . . . . . .	Byte	 000003E7 _DATA	
+??0029 . . . . . . . . . . . . .	Text   	 o
+??002A . . . . . . . . . . . . .	Byte	 000003E6 _DATA	
+??002B . . . . . . . . . . . . .	L Near	 0000042B _TEXT	
+??002C . . . . . . . . . . . . .	L Near	 0000045F _TEXT	
+??002D . . . . . . . . . . . . .	Byte	 0000053F _DATA	
+??002E . . . . . . . . . . . . .	Byte	 00000517 _DATA	
+??002F . . . . . . . . . . . . .	Text   	 "
+??0030 . . . . . . . . . . . . .	Byte	 00000516 _DATA	
+??0032 . . . . . . . . . . . . .	L Near	 000004A0 _TEXT	
+??0033 . . . . . . . . . . . . .	Number	 00000000h   
+??0034 . . . . . . . . . . . . .	Byte	 00000542 _DATA	
+??0036 . . . . . . . . . . . . .	Byte	 00000671 _DATA	
+??0037 . . . . . . . . . . . . .	Byte	 00000545 _DATA	
+??0038 . . . . . . . . . . . . .	Text   	 o
+??0039 . . . . . . . . . . . . .	Byte	 00000544 _DATA	
+??003A . . . . . . . . . . . . .	L Near	 000004D3 _TEXT	
+??003B . . . . . . . . . . . . .	L Near	 00000507 _TEXT	
+??003C . . . . . . . . . . . . .	Number	 00000000h   
+??003D . . . . . . . . . . . . .	DWord	 00000674 _DATA	
+??003E . . . . . . . . . . . . .	Byte	 000006A4 _DATA	
+??003F . . . . . . . . . . . . .	Byte	 00000679 _DATA	
+??0040 . . . . . . . . . . . . .	Text   	 "
+??0041 . . . . . . . . . . . . .	Byte	 00000678 _DATA	
+??0043 . . . . . . . . . . . . .	L Near	 0000056B _TEXT	
+??0044 . . . . . . . . . . . . .	Number	 00000000h   
+??0045 . . . . . . . . . . . . .	Byte	 000006A7 _DATA	
+??0047 . . . . . . . . . . . . .	Byte	 000007D6 _DATA	
+??0048 . . . . . . . . . . . . .	Byte	 000006AA _DATA	
+??0049 . . . . . . . . . . . . .	Text   	 o
+??004A . . . . . . . . . . . . .	Byte	 000006A9 _DATA	
+??004B . . . . . . . . . . . . .	L Near	 0000059E _TEXT	
+??004C . . . . . . . . . . . . .	L Near	 000005D2 _TEXT	
+??004D . . . . . . . . . . . . .	Number	 00000000h   
+??004E . . . . . . . . . . . . .	DWord	 000007D9 _DATA	
+??004F . . . . . . . . . . . . .	Byte	 00000804 _DATA	
+??0050 . . . . . . . . . . . . .	Byte	 000007DE _DATA	
+??0051 . . . . . . . . . . . . .	Text   	 "
+??0052 . . . . . . . . . . . . .	Byte	 000007DD _DATA	
+??0054 . . . . . . . . . . . . .	L Near	 00000650 _TEXT	
+??0055 . . . . . . . . . . . . .	Number	 00000007h   
+??0056 . . . . . . . . . . . . .	Number	 00000008h   
+??0057 . . . . . . . . . . . . .	Number	 00000000h   
+??0058 . . . . . . . . . . . . .	Byte	 00000807 _DATA	
+??0060 . . . . . . . . . . . . .	Number	 00000001h   
+??0062 . . . . . . . . . . . . .	Number	 00000000h   
+??0063 . . . . . . . . . . . . .	Byte	 0000080A _DATA	
+??0065 . . . . . . . . . . . . .	Byte	 00000939 _DATA	
+??0066 . . . . . . . . . . . . .	Byte	 0000080D _DATA	
+??0067 . . . . . . . . . . . . .	Text   	 o
+??0068 . . . . . . . . . . . . .	Byte	 0000080C _DATA	
+??0069 . . . . . . . . . . . . .	L Near	 000006A1 _TEXT	
+??006A . . . . . . . . . . . . .	L Near	 000006D5 _TEXT	
+??006B . . . . . . . . . . . . .	Byte	 0000096D _DATA	
+??006C . . . . . . . . . . . . .	Byte	 0000093D _DATA	
+??006D . . . . . . . . . . . . .	Text   	 "
+??006E . . . . . . . . . . . . .	Byte	 0000093C _DATA	
+??0070 . . . . . . . . . . . . .	L Near	 00000716 _TEXT	
+??0071 . . . . . . . . . . . . .	Number	 00000000h   
+??0072 . . . . . . . . . . . . .	Byte	 00000970 _DATA	
+??0074 . . . . . . . . . . . . .	Byte	 00000A9F _DATA	
+??0075 . . . . . . . . . . . . .	Byte	 00000973 _DATA	
+??0076 . . . . . . . . . . . . .	Text   	 o
+??0077 . . . . . . . . . . . . .	Byte	 00000972 _DATA	
+??0078 . . . . . . . . . . . . .	L Near	 00000749 _TEXT	
+??0079 . . . . . . . . . . . . .	L Near	 0000077D _TEXT	
+??007A . . . . . . . . . . . . .	Number	 00000000h   
+??007B . . . . . . . . . . . . .	DWord	 00000AA2 _DATA	
+??007C . . . . . . . . . . . . .	Number	 00000008h   
+??007D . . . . . . . . . . . . .	Number	 00000009h   
+??007E . . . . . . . . . . . . .	Number	 00000000h   
+??007F . . . . . . . . . . . . .	Byte	 00000AA6 _DATA	
+??0087 . . . . . . . . . . . . .	Number	 00000002h   
+??0089 . . . . . . . . . . . . .	Number	 00000000h   
+??008A . . . . . . . . . . . . .	Byte	 00000AAA _DATA	
+??008C . . . . . . . . . . . . .	Byte	 00000BD9 _DATA	
+??008D . . . . . . . . . . . . .	Byte	 00000AAD _DATA	
+??008E . . . . . . . . . . . . .	Text   	 o
+??008F . . . . . . . . . . . . .	Byte	 00000AAC _DATA	
+??0090 . . . . . . . . . . . . .	L Near	 00000899 _TEXT	
+??0091 . . . . . . . . . . . . .	L Near	 000008CD _TEXT	
+??0092 . . . . . . . . . . . . .	Byte	 00000C05 _DATA	
+??0093 . . . . . . . . . . . . .	Byte	 00000BDD _DATA	
+??0094 . . . . . . . . . . . . .	Text   	 "
+??0095 . . . . . . . . . . . . .	Byte	 00000BDC _DATA	
+??0097 . . . . . . . . . . . . .	L Near	 00000928 _TEXT	
+??0098 . . . . . . . . . . . . .	Number	 00000000h   
+??0099 . . . . . . . . . . . . .	Byte	 00000C08 _DATA	
+??009B . . . . . . . . . . . . .	Byte	 00000D37 _DATA	
+??009C . . . . . . . . . . . . .	Byte	 00000C0B _DATA	
+??009D . . . . . . . . . . . . .	Text   	 o
+??009E . . . . . . . . . . . . .	Byte	 00000C0A _DATA	
+??009F . . . . . . . . . . . . .	L Near	 0000095B _TEXT	
+??00A0 . . . . . . . . . . . . .	L Near	 0000098F _TEXT	
+??00A1 . . . . . . . . . . . . .	Number	 00000000h   
+??00A2 . . . . . . . . . . . . .	DWord	 00000D3A _DATA	
+??00A3 . . . . . . . . . . . . .	Byte	 00000D6A _DATA	
+??00A4 . . . . . . . . . . . . .	Byte	 00000D3F _DATA	
+??00A5 . . . . . . . . . . . . .	Text   	 "
+??00A6 . . . . . . . . . . . . .	Byte	 00000D3E _DATA	
+??00A8 . . . . . . . . . . . . .	L Near	 000009F3 _TEXT	
+??00A9 . . . . . . . . . . . . .	Number	 00000000h   
+??00AA . . . . . . . . . . . . .	Byte	 00000D6D _DATA	
+??00AC . . . . . . . . . . . . .	Byte	 00000E9C _DATA	
+??00AD . . . . . . . . . . . . .	Byte	 00000D70 _DATA	
+??00AE . . . . . . . . . . . . .	Text   	 o
+??00AF . . . . . . . . . . . . .	Byte	 00000D6F _DATA	
+??00B0 . . . . . . . . . . . . .	L Near	 00000A26 _TEXT	
+??00B1 . . . . . . . . . . . . .	L Near	 00000A5A _TEXT	
+??00B2 . . . . . . . . . . . . .	Number	 00000000h   
+??00B3 . . . . . . . . . . . . .	DWord	 00000E9F _DATA	
+??00B4 . . . . . . . . . . . . .	Byte	 00000ECA _DATA	
+??00B5 . . . . . . . . . . . . .	Byte	 00000EA4 _DATA	
+??00B6 . . . . . . . . . . . . .	Text   	 "
+??00B7 . . . . . . . . . . . . .	Byte	 00000EA3 _DATA	
+??00B9 . . . . . . . . . . . . .	L Near	 00000AD8 _TEXT	
+??00BA . . . . . . . . . . . . .	Number	 00000007h   
+??00BB . . . . . . . . . . . . .	Number	 00000008h   
+??00BC . . . . . . . . . . . . .	Number	 00000000h   
+??00BD . . . . . . . . . . . . .	Byte	 00000ECD _DATA	
+??00C5 . . . . . . . . . . . . .	Number	 00000001h   
+??00C7 . . . . . . . . . . . . .	Number	 00000000h   
+??00C8 . . . . . . . . . . . . .	Byte	 00000ED0 _DATA	
+??00CA . . . . . . . . . . . . .	Byte	 00000FFF _DATA	
+??00CB . . . . . . . . . . . . .	Byte	 00000ED3 _DATA	
+??00CC . . . . . . . . . . . . .	Text   	 o
+??00CD . . . . . . . . . . . . .	Byte	 00000ED2 _DATA	
+??00CE . . . . . . . . . . . . .	L Near	 00000B29 _TEXT	
+??00CF . . . . . . . . . . . . .	L Near	 00000B5D _TEXT	
+??00D0 . . . . . . . . . . . . .	Byte	 00001033 _DATA	
+??00D1 . . . . . . . . . . . . .	Byte	 00001003 _DATA	
+??00D2 . . . . . . . . . . . . .	Text   	 "
+??00D3 . . . . . . . . . . . . .	Byte	 00001002 _DATA	
+??00D5 . . . . . . . . . . . . .	L Near	 00000B9E _TEXT	
+??00D6 . . . . . . . . . . . . .	Number	 00000000h   
+??00D7 . . . . . . . . . . . . .	Byte	 00001036 _DATA	
+??00D9 . . . . . . . . . . . . .	Byte	 00001165 _DATA	
+??00DA . . . . . . . . . . . . .	Byte	 00001039 _DATA	
+??00DB . . . . . . . . . . . . .	Text   	 o
+??00DC . . . . . . . . . . . . .	Byte	 00001038 _DATA	
+??00DD . . . . . . . . . . . . .	L Near	 00000BD1 _TEXT	
+??00DE . . . . . . . . . . . . .	L Near	 00000C05 _TEXT	
+??00DF . . . . . . . . . . . . .	Number	 00000000h   
+??00E0 . . . . . . . . . . . . .	DWord	 00001168 _DATA	
+??00E1 . . . . . . . . . . . . .	Number	 00000008h   
+??00E2 . . . . . . . . . . . . .	Number	 00000009h   
+??00E3 . . . . . . . . . . . . .	Number	 00000000h   
+??00E4 . . . . . . . . . . . . .	Byte	 0000116C _DATA	
+??00EC . . . . . . . . . . . . .	Number	 00000002h   
+??00EE . . . . . . . . . . . . .	Number	 00000000h   
+??00EF . . . . . . . . . . . . .	Byte	 00001170 _DATA	
+??00F1 . . . . . . . . . . . . .	Byte	 0000129F _DATA	
+??00F2 . . . . . . . . . . . . .	Byte	 00001173 _DATA	
+??00F3 . . . . . . . . . . . . .	Text   	 o
+??00F4 . . . . . . . . . . . . .	Byte	 00001172 _DATA	
+??00F5 . . . . . . . . . . . . .	L Near	 00000CF1 _TEXT	
+??00F6 . . . . . . . . . . . . .	L Near	 00000D25 _TEXT	
+??00F7 . . . . . . . . . . . . .	Byte	 000012B5 _DATA	
+??00F8 . . . . . . . . . . . . .	Byte	 000012A3 _DATA	
+??00F9 . . . . . . . . . . . . .	Text   	 "
+??00FA . . . . . . . . . . . . .	Byte	 000012A2 _DATA	
+??00FC . . . . . . . . . . . . .	L Near	 00000D7A _TEXT	
+??00FD . . . . . . . . . . . . .	Number	 00000000h   
+??00FE . . . . . . . . . . . . .	Byte	 000012B8 _DATA	
+??0100 . . . . . . . . . . . . .	Byte	 000013E7 _DATA	
+??0101 . . . . . . . . . . . . .	Byte	 000012BB _DATA	
+??0102 . . . . . . . . . . . . .	Text   	 o
+??0103 . . . . . . . . . . . . .	Byte	 000012BA _DATA	
+??0104 . . . . . . . . . . . . .	L Near	 00000DAD _TEXT	
+??0105 . . . . . . . . . . . . .	L Near	 00000DE1 _TEXT	
+??0106 . . . . . . . . . . . . .	Number	 00000000h   
+??0107 . . . . . . . . . . . . .	Byte	 000013EA _DATA	
+??0109 . . . . . . . . . . . . .	Byte	 00001519 _DATA	
+??010A . . . . . . . . . . . . .	Byte	 000013ED _DATA	
+??010B . . . . . . . . . . . . .	Text   	 o
+??010C . . . . . . . . . . . . .	Byte	 000013EC _DATA	
+??010D . . . . . . . . . . . . .	L Near	 00000E18 _TEXT	
+??010E . . . . . . . . . . . . .	L Near	 00000E4C _TEXT	
+??010F . . . . . . . . . . . . .	Byte	 00001534 _DATA	
+??0110 . . . . . . . . . . . . .	Byte	 0000151D _DATA	
+??0111 . . . . . . . . . . . . .	Text   	 "
+??0112 . . . . . . . . . . . . .	Byte	 0000151C _DATA	
+??0114 . . . . . . . . . . . . .	L Near	 00000E8D _TEXT	
+??0115 . . . . . . . . . . . . .	Number	 00000000h   
+??0116 . . . . . . . . . . . . .	Byte	 00001537 _DATA	
+??0118 . . . . . . . . . . . . .	Byte	 00001666 _DATA	
+??0119 . . . . . . . . . . . . .	Byte	 0000153A _DATA	
+??011A . . . . . . . . . . . . .	Text   	 o
+??011B . . . . . . . . . . . . .	Byte	 00001539 _DATA	
+??011C . . . . . . . . . . . . .	L Near	 00000EC0 _TEXT	
+??011D . . . . . . . . . . . . .	L Near	 00000EF4 _TEXT	
+??011E . . . . . . . . . . . . .	Byte	 0000166F _DATA	
+??011F . . . . . . . . . . . . .	Byte	 0000166A _DATA	
+??0120 . . . . . . . . . . . . .	Text   	 "
+??0121 . . . . . . . . . . . . .	Byte	 00001669 _DATA	
+??0123 . . . . . . . . . . . . .	L Near	 00000F35 _TEXT	
+??0124 . . . . . . . . . . . . .	Number	 00000000h   
+??0125 . . . . . . . . . . . . .	Byte	 00001672 _DATA	
+??0127 . . . . . . . . . . . . .	Byte	 000017A1 _DATA	
+??0128 . . . . . . . . . . . . .	Byte	 00001675 _DATA	
+??0129 . . . . . . . . . . . . .	Text   	 o
+??012A . . . . . . . . . . . . .	Byte	 00001674 _DATA	
+??012B . . . . . . . . . . . . .	L Near	 00000F68 _TEXT	
+??012C . . . . . . . . . . . . .	L Near	 00000F9C _TEXT	
+??012D . . . . . . . . . . . . .	Byte	 000017AA _DATA	
+??012E . . . . . . . . . . . . .	Byte	 000017A5 _DATA	
+??012F . . . . . . . . . . . . .	Text   	 "
+??0130 . . . . . . . . . . . . .	Byte	 000017A4 _DATA	
+??0132 . . . . . . . . . . . . .	L Near	 00000FDD _TEXT	
+??0133 . . . . . . . . . . . . .	Number	 00000000h   
+??0134 . . . . . . . . . . . . .	Byte	 000017AD _DATA	
+??0136 . . . . . . . . . . . . .	Byte	 000018DC _DATA	
+??0137 . . . . . . . . . . . . .	Byte	 000017B0 _DATA	
+??0138 . . . . . . . . . . . . .	Text   	 o
+??0139 . . . . . . . . . . . . .	Byte	 000017AF _DATA	
+??013A . . . . . . . . . . . . .	L Near	 00001010 _TEXT	
+??013B . . . . . . . . . . . . .	L Near	 00001044 _TEXT	
+??013C . . . . . . . . . . . . .	Byte	 000018E5 _DATA	
+??013D . . . . . . . . . . . . .	Byte	 000018E0 _DATA	
+??013E . . . . . . . . . . . . .	Text   	 "
+??013F . . . . . . . . . . . . .	Byte	 000018DF _DATA	
+??0141 . . . . . . . . . . . . .	L Near	 00001085 _TEXT	
+??0142 . . . . . . . . . . . . .	Number	 00000000h   
+??0143 . . . . . . . . . . . . .	Byte	 000018E8 _DATA	
+??0145 . . . . . . . . . . . . .	Byte	 00001A17 _DATA	
+??0146 . . . . . . . . . . . . .	Byte	 000018EB _DATA	
+??0147 . . . . . . . . . . . . .	Text   	 o
+??0148 . . . . . . . . . . . . .	Byte	 000018EA _DATA	
+??0149 . . . . . . . . . . . . .	L Near	 000010B8 _TEXT	
+??014A . . . . . . . . . . . . .	L Near	 000010EC _TEXT	
+??014B . . . . . . . . . . . . .	Byte	 00001A20 _DATA	
+??014C . . . . . . . . . . . . .	Byte	 00001A1B _DATA	
+??014D . . . . . . . . . . . . .	Text   	 "
+??014E . . . . . . . . . . . . .	Byte	 00001A1A _DATA	
+??0150 . . . . . . . . . . . . .	L Near	 0000112D _TEXT	
+??0151 . . . . . . . . . . . . .	Number	 00000000h   
+??0152 . . . . . . . . . . . . .	Byte	 00001A23 _DATA	
+??0154 . . . . . . . . . . . . .	Byte	 00001B52 _DATA	
+??0155 . . . . . . . . . . . . .	Byte	 00001A26 _DATA	
+??0156 . . . . . . . . . . . . .	Text   	 o
+??0157 . . . . . . . . . . . . .	Byte	 00001A25 _DATA	
+??0158 . . . . . . . . . . . . .	L Near	 00001160 _TEXT	
+??0159 . . . . . . . . . . . . .	L Near	 00001194 _TEXT	
+??015A . . . . . . . . . . . . .	Byte	 00001B5D _DATA	
+??015B . . . . . . . . . . . . .	Byte	 00001B56 _DATA	
+??015C . . . . . . . . . . . . .	Text   	 "
+??015D . . . . . . . . . . . . .	Byte	 00001B55 _DATA	
+??015F . . . . . . . . . . . . .	L Near	 000011D5 _TEXT	
+??0160 . . . . . . . . . . . . .	Number	 00000000h   
+??0161 . . . . . . . . . . . . .	Byte	 00001B60 _DATA	
+??0163 . . . . . . . . . . . . .	Byte	 00001C8F _DATA	
+??0164 . . . . . . . . . . . . .	Byte	 00001B63 _DATA	
+??0165 . . . . . . . . . . . . .	Text   	 o
+??0166 . . . . . . . . . . . . .	Byte	 00001B62 _DATA	
+??0167 . . . . . . . . . . . . .	L Near	 00001208 _TEXT	
+??0168 . . . . . . . . . . . . .	L Near	 0000123C _TEXT	
+??0169 . . . . . . . . . . . . .	Number	 00000000h   
+??016A . . . . . . . . . . . . .	DWord	 00001C92 _DATA	
+??016B . . . . . . . . . . . . .	Number	 00000008h   
+??016C . . . . . . . . . . . . .	Number	 00000009h   
+??016D . . . . . . . . . . . . .	Number	 00000000h   
+??016E . . . . . . . . . . . . .	Byte	 00001C96 _DATA	
+??0176 . . . . . . . . . . . . .	Number	 00000002h   
+??0178 . . . . . . . . . . . . .	Number	 00000000h   
+??0179 . . . . . . . . . . . . .	Byte	 00001C9A _DATA	
+??017B . . . . . . . . . . . . .	Byte	 00001DC9 _DATA	
+??017C . . . . . . . . . . . . .	Byte	 00001C9D _DATA	
+??017D . . . . . . . . . . . . .	Text   	 o
+??017E . . . . . . . . . . . . .	Byte	 00001C9C _DATA	
+??017F . . . . . . . . . . . . .	L Near	 000013DB _TEXT	
+??0180 . . . . . . . . . . . . .	L Near	 0000140F _TEXT	
+??0181 . . . . . . . . . . . . .	Number	 00000000h   
+??0182 . . . . . . . . . . . . .	Number	 00000001h   
+??0183 . . . . . . . . . . . . .	Number	 00000000h   
+??0184 . . . . . . . . . . . . .	Byte	 00001DCC _DATA	
+??018C . . . . . . . . . . . . .	Number	 00000002h   
+??018E . . . . . . . . . . . . .	Byte	 00001DD2 _DATA	
+??018F . . . . . . . . . . . . .	Byte	 00001DD0 _DATA	
+??0190 . . . . . . . . . . . . .	Text   	 "
+??0191 . . . . . . . . . . . . .	Byte	 00001DCF _DATA	
+??0193 . . . . . . . . . . . . .	L Near	 00001656 _TEXT	
+??0194 . . . . . . . . . . . . .	Number	 00000000h   
+??0195 . . . . . . . . . . . . .	Number	 00000001h   
+??0196 . . . . . . . . . . . . .	Number	 00000000h   
+??0197 . . . . . . . . . . . . .	Byte	 00001DD5 _DATA	
+??019F . . . . . . . . . . . . .	Number	 00000002h   
+??01A1 . . . . . . . . . . . . .	Byte	 00001DDB _DATA	
+??01A2 . . . . . . . . . . . . .	Byte	 00001DD9 _DATA	
+??01A3 . . . . . . . . . . . . .	Text   	 "
+??01A4 . . . . . . . . . . . . .	Byte	 00001DD8 _DATA	
+??01A6 . . . . . . . . . . . . .	L Near	 000016B4 _TEXT	
+??01A7 . . . . . . . . . . . . .	Number	 00000000h   
+??01A8 . . . . . . . . . . . . .	Number	 00000001h   
+??01A9 . . . . . . . . . . . . .	Number	 00000000h   
+??01AA . . . . . . . . . . . . .	Byte	 00001DDE _DATA	
+??01B2 . . . . . . . . . . . . .	Number	 00000002h   
+??01B4 . . . . . . . . . . . . .	Number	 00000000h   
+??01B5 . . . . . . . . . . . . .	Byte	 00001DE1 _DATA	
+??01B7 . . . . . . . . . . . . .	Byte	 00001F10 _DATA	
+??01B8 . . . . . . . . . . . . .	Byte	 00001DE4 _DATA	
+??01B9 . . . . . . . . . . . . .	Text   	 o
+??01BA . . . . . . . . . . . . .	Byte	 00001DE3 _DATA	
+??01BB . . . . . . . . . . . . .	L Near	 00001701 _TEXT	
+??01BC . . . . . . . . . . . . .	L Near	 00001735 _TEXT	
+??01BD . . . . . . . . . . . . .	Number	 00000000h   
+??01BE . . . . . . . . . . . . .	Byte	 00001F13 _DATA	
+??01C0 . . . . . . . . . . . . .	Byte	 00002042 _DATA	
+??01C1 . . . . . . . . . . . . .	Byte	 00001F16 _DATA	
+??01C2 . . . . . . . . . . . . .	Text   	 o
+??01C3 . . . . . . . . . . . . .	Byte	 00001F15 _DATA	
+??01C4 . . . . . . . . . . . . .	L Near	 0000178B _TEXT	
+??01C5 . . . . . . . . . . . . .	L Near	 000017BF _TEXT	
+??01C6 . . . . . . . . . . . . .	Byte	 0000205E _DATA	
+??01C7 . . . . . . . . . . . . .	Byte	 00002046 _DATA	
+??01C8 . . . . . . . . . . . . .	Text   	 "
+??01C9 . . . . . . . . . . . . .	Byte	 00002045 _DATA	
+??01CB . . . . . . . . . . . . .	L Near	 0000185F _TEXT	
+??01CC . . . . . . . . . . . . .	Number	 00000000h   
+??01CD . . . . . . . . . . . . .	Byte	 00002061 _DATA	
+??01CF . . . . . . . . . . . . .	Byte	 00002190 _DATA	
+??01D0 . . . . . . . . . . . . .	Byte	 00002064 _DATA	
+??01D1 . . . . . . . . . . . . .	Text   	 o
+??01D2 . . . . . . . . . . . . .	Byte	 00002063 _DATA	
+??01D3 . . . . . . . . . . . . .	L Near	 00001892 _TEXT	
+??01D4 . . . . . . . . . . . . .	L Near	 000018C6 _TEXT	
+??01D5 . . . . . . . . . . . . .	Byte	 000021AC _DATA	
+??01D6 . . . . . . . . . . . . .	Byte	 00002194 _DATA	
+??01D7 . . . . . . . . . . . . .	Text   	 "
+??01D8 . . . . . . . . . . . . .	Byte	 00002193 _DATA	
+??01DA . . . . . . . . . . . . .	L Near	 0000190C _TEXT	
+??01DB . . . . . . . . . . . . .	Number	 00000000h   
+??01DC . . . . . . . . . . . . .	Byte	 000021AF _DATA	
+??01DE . . . . . . . . . . . . .	Byte	 000022DE _DATA	
+??01DF . . . . . . . . . . . . .	Byte	 000021B2 _DATA	
+??01E0 . . . . . . . . . . . . .	Text   	 o
+??01E1 . . . . . . . . . . . . .	Byte	 000021B1 _DATA	
+??01E2 . . . . . . . . . . . . .	L Near	 0000193F _TEXT	
+??01E3 . . . . . . . . . . . . .	L Near	 00001973 _TEXT	
+??01E4 . . . . . . . . . . . . .	Byte	 000022ED _DATA	
+??01E5 . . . . . . . . . . . . .	Byte	 000022E2 _DATA	
+??01E6 . . . . . . . . . . . . .	Text   	 "
+??01E7 . . . . . . . . . . . . .	Byte	 000022E1 _DATA	
+??01E9 . . . . . . . . . . . . .	L Near	 000019B9 _TEXT	
+??01EA . . . . . . . . . . . . .	Byte	 000022FC _DATA	
+??01EB . . . . . . . . . . . . .	Byte	 000022F1 _DATA	
+??01EC . . . . . . . . . . . . .	Text   	 "
+??01ED . . . . . . . . . . . . .	Byte	 000022F0 _DATA	
+??01EF . . . . . . . . . . . . .	L Near	 000019F8 _TEXT	
+??CommonHeapElemSize . . . . . .	DWord	 00000004 _DATA	
+??ConsoleMode  . . . . . . . . .	Byte	 00000008 _DATA	
+??TotalHeapAllocated . . . . . .	DWord	 00000000 _DATA	
+??buf  . . . . . . . . . . . . .	Byte	 00000019 _DATA	
+??sTime  . . . . . . . . . . . .	SystemTime  00000009 _DATA	
+@CodeSize  . . . . . . . . . . .	Number	 00000000h   
+@DOS . . . . . . . . . . . . . .	Text   	 DOS
+@DataSize  . . . . . . . . . . .	Number	 00000000h   
+@INCHAR  . . . . . . . . . . . .	Text   	 @inchar
+@ININTLN . . . . . . . . . . . .	Text   	 @inintln
+@ININT . . . . . . . . . . . . .	Text   	 @inint
+@InChar  . . . . . . . . . . . .	Text   	 @inchar
+@InInt . . . . . . . . . . . . .	Text   	 @inint
+@Inchar  . . . . . . . . . . . .	Text   	 @inchar
+@InintLn . . . . . . . . . . . .	Text   	 @inintln
+@Inintln . . . . . . . . . . . .	Text   	 @inintln
+@Inint . . . . . . . . . . . . .	Text   	 @inint
+@Interface . . . . . . . . . . .	Number	 00000003h   
+@Model . . . . . . . . . . . . .	Number	 00000007h   
+@READKEY . . . . . . . . . . . .	Text   	 @readkey
+@ReadKey . . . . . . . . . . . .	Text   	 @readkey
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
+@data  . . . . . . . . . . . . .	Text   	 FLAT
+@dos . . . . . . . . . . . . . .	Text   	 DOS
+@fardata?  . . . . . . . . . . .	Text   	 FLAT
+@fardata . . . . . . . . . . . .	Text   	 FLAT
+@random  . . . . . . . . . . . .	Text   	 @Random
+@stack . . . . . . . . . . . . .	Text   	 FLAT
+AllocConsole@0 . . . . . . . . .	L Near	 00000000 FLAT	External STDCALL
+Black  . . . . . . . . . . . . .	Number	 00000000h   
+Blue . . . . . . . . . . . . . .	Number	 00000001h   
+Bright . . . . . . . . . . . . .	Number	 00000008h   
+Brown  . . . . . . . . . . . . .	Number	 00000006h   
+CLRSCR . . . . . . . . . . . . .	Text   	 ClrScr
+CREATE_ALWAYS  . . . . . . . . .	Number	 00000002h   
+CREATE_NEW . . . . . . . . . . .	Number	 00000001h   
+CharToOem  . . . . . . . . . . .	Text   	 CharToOemA
+Cls  . . . . . . . . . . . . . .	Text   	 ClrScr
+CreateFile . . . . . . . . . . .	Text   	 CreateFileA
+Cyan . . . . . . . . . . . . . .	Number	 00000003h   
+DISPOSE  . . . . . . . . . . . .	Text   	 dispose
+DarkGray . . . . . . . . . . . .	Number	 00000008h   
+Dispose  . . . . . . . . . . . .	Text   	 dispose
+EXIT . . . . . . . . . . . . . .	Text   	 exit
+Exit . . . . . . . . . . . . . .	Text   	 exit
+FILE_ATTRIBUTE_ARCHIVE . . . . .	Number	 00000020h   
+FILE_ATTRIBUTE_COMPRESSED  . . .	Number	 00000800h   
+FILE_ATTRIBUTE_DIRECTORY . . . .	Number	 00000010h   
+FILE_ATTRIBUTE_HIDDEN  . . . . .	Number	 00000002h   
+FILE_ATTRIBUTE_NORMAL  . . . . .	Number	 00000080h   
+FILE_ATTRIBUTE_READONLY  . . . .	Number	 00000001h   
+FILE_ATTRIBUTE_SYSTEM  . . . . .	Number	 00000004h   
+FILE_ATTRIBUTE_TEMPORARY . . . .	Number	 00000100h   
+FLUSH  . . . . . . . . . . . . .	Text   	 flush
+Flush  . . . . . . . . . . . . .	Text   	 flush
+FreeConsole@0  . . . . . . . . .	L Near	 00000000 FLAT	External STDCALL
+GENERIC_ALL  . . . . . . . . . .	Number	 10000000h   
+GENERIC_EXECUTE  . . . . . . . .	Number	 20000000h   
+GENERIC_READ . . . . . . . . . .	Number	 -80000000h   
+GENERIC_WRITE  . . . . . . . . .	Number	 40000000h   
+GMEM_FIXED . . . . . . . . . . .	Number	 00000000h   
+GMEM_ZEROINIT  . . . . . . . . .	Number	 00000040h   
+GOTOXY . . . . . . . . . . . . .	Text   	 gotoXY
+GetModuleHandle  . . . . . . . .	Text   	 GetModuleHandleA
+GotoXY . . . . . . . . . . . . .	Text   	 gotoXY
+Green  . . . . . . . . . . . . .	Number	 00000002h   
+IDABORT  . . . . . . . . . . . .	Number	 00000003h   
+IDCANCEL . . . . . . . . . . . .	Number	 00000002h   
+IDIGNORE . . . . . . . . . . . .	Number	 00000005h   
+IDNO . . . . . . . . . . . . . .	Number	 00000007h   
+IDOK . . . . . . . . . . . . . .	Number	 00000001h   
+IDRETRY  . . . . . . . . . . . .	Number	 00000004h   
+IDYES  . . . . . . . . . . . . .	Number	 00000006h   
+INCHAR . . . . . . . . . . . . .	Text   	 inchar
+ININTLN  . . . . . . . . . . . .	Text   	 inintln
+ININT  . . . . . . . . . . . . .	Text   	 inint
+INPUTSTR . . . . . . . . . . . .	Text   	 InputStr
+InChar . . . . . . . . . . . . .	Text   	 inchar
+InInt  . . . . . . . . . . . . .	Text   	 inint
+Inchar . . . . . . . . . . . . .	Text   	 inchar
+InintLn  . . . . . . . . . . . .	Text   	 inintln
+Inintln  . . . . . . . . . . . .	Text   	 inintln
+Inint  . . . . . . . . . . . . .	Text   	 inint
+LANG_NEUTRAL . . . . . . . . . .	Number	 00000000h   
+LOOP1  . . . . . . . . . . . . .	L Near	 000007B0 _TEXT	
+LOOP2  . . . . . . . . . . . . .	L Near	 00000C38 _TEXT	
+LightBlue  . . . . . . . . . . .	Number	 00000009h   
+LightGray  . . . . . . . . . . .	Number	 00000007h   
+LightGreen . . . . . . . . . . .	Number	 0000000Ah   
+LightMagenta . . . . . . . . . .	Number	 0000000Dh   
+LightRed . . . . . . . . . . . .	Number	 0000000Ch   
+MB_ABORTRETRYIGNORE  . . . . . .	Number	 00000002h   
+MB_CANCELTRYCONTINUE . . . . . .	Number	 00000006h   
+MB_DEFBUTTON1  . . . . . . . . .	Number	 00000000h   
+MB_DEFBUTTON2  . . . . . . . . .	Number	 00000100h   
+MB_DEFBUTTON3  . . . . . . . . .	Number	 00000200h   
+MB_DEFBUTTON4  . . . . . . . . .	Number	 00000300h   
+MB_HELP  . . . . . . . . . . . .	Number	 00004000h   
+MB_ICONASTERISK  . . . . . . . .	Number	 00000040h   
+MB_ICONEXCLAMATION . . . . . . .	Number	 00000030h   
+MB_ICONHAND  . . . . . . . . . .	Number	 00000008h   
+MB_ICONQUESTION  . . . . . . . .	Number	 00000020h   
+MB_ICONSTOP  . . . . . . . . . .	Number	 00000010h   
+MB_OKCANCEL  . . . . . . . . . .	Number	 00000001h   
+MB_OK  . . . . . . . . . . . . .	Number	 00000000h   
+MB_RETRYCANCEL . . . . . . . . .	Number	 00000005h   
+MB_RIGHT . . . . . . . . . . . .	Number	 00080000h   
+MB_SYSTEMMODAL . . . . . . . . .	Number	 00001000h   
+MB_USERICON  . . . . . . . . . .	Number	 00000080h   
+MB_YESNOCANCEL . . . . . . . . .	Number	 00000003h   
+MB_YESNO . . . . . . . . . . . .	Number	 00000004h   
+MSGBOX . . . . . . . . . . . . .	Text   	 MsgBox
+Magenta  . . . . . . . . . . . .	Number	 00000005h   
+MessageBoxIndirect . . . . . . .	Text   	 MessageBoxIndirectA
+MessageBox . . . . . . . . . . .	Text   	 _imp__MessageBoxA@16
+NEWLINE  . . . . . . . . . . . .	Text   	 newline
+NEW  . . . . . . . . . . . . . .	Text   	 new
+NULL . . . . . . . . . . . . . .	Number	 00000000h   
+NewLine  . . . . . . . . . . . .	Text   	 newline
+Newline  . . . . . . . . . . . .	Text   	 newline
+New  . . . . . . . . . . . . . .	Text   	 new
+OPEN_ALWAYS  . . . . . . . . . .	Number	 00000004h   
+OPEN_EXISTING  . . . . . . . . .	Number	 00000003h   
+OUTCHARLN  . . . . . . . . . . .	Text   	 outcharln
+OUTCHAR  . . . . . . . . . . . .	Text   	 outchar
+OUTCH  . . . . . . . . . . . . .	Text   	 outchar
+OUTCLN . . . . . . . . . . . . .	Text   	 outcharln
+OUTDATELN  . . . . . . . . . . .	Text   	 outdateln
+OUTDATE  . . . . . . . . . . . .	Text   	 outdate
+OUTINTLN . . . . . . . . . . . .	Text   	 outintln
+OUTINT . . . . . . . . . . . . .	Text   	 outint
+OUTI . . . . . . . . . . . . . .	Text   	 outint
+OUTSTRLN . . . . . . . . . . . .	Text   	 outstrln
+OUTSTR . . . . . . . . . . . . .	Text   	 outstr
+OUTTIMELN  . . . . . . . . . . .	Text   	 outtimeln
+OUTTIME  . . . . . . . . . . . .	Text   	 outtime
+OUTU . . . . . . . . . . . . . .	Text   	 outword
+OUTWORDLN  . . . . . . . . . . .	Text   	 outwordln
+OUTWORD  . . . . . . . . . . . .	Text   	 outword
+OutCharLn  . . . . . . . . . . .	Text   	 outcharln
+OutCharln  . . . . . . . . . . .	Text   	 outcharln
+OutChar  . . . . . . . . . . . .	Text   	 outchar
+OutDateLn  . . . . . . . . . . .	Text   	 outdateln
+OutDateln  . . . . . . . . . . .	Text   	 outdateln
+OutDate  . . . . . . . . . . . .	Text   	 outdate
+OutILn . . . . . . . . . . . . .	Text   	 outintln
+OutIln . . . . . . . . . . . . .	Text   	 outintln
+OutIntLn . . . . . . . . . . . .	Text   	 outintln
+OutInt . . . . . . . . . . . . .	Text   	 outint
+OutI . . . . . . . . . . . . . .	Text   	 outint
+OutNumLn . . . . . . . . . . . .	Text   	 outnumln
+OutNumln . . . . . . . . . . . .	Text   	 outnumln
+OutNum . . . . . . . . . . . . .	Text   	 outnum
+OutStrLn . . . . . . . . . . . .	Text   	 outstrln
+OutStr . . . . . . . . . . . . .	Text   	 outstr
+OutTimeLn  . . . . . . . . . . .	Text   	 outtimeln
+OutTimeln  . . . . . . . . . . .	Text   	 outtimeln
+OutTime  . . . . . . . . . . . .	Text   	 outtime
+OutULn . . . . . . . . . . . . .	Text   	 outwordln
+OutUln . . . . . . . . . . . . .	Text   	 outwordln
+OutUnsignedLn  . . . . . . . . .	Text   	 outwordln
+OutUnsignedln  . . . . . . . . .	Text   	 outwordln
+OutUnsigned  . . . . . . . . . .	Text   	 outword
+OutU . . . . . . . . . . . . . .	Text   	 outword
+OutWordLn  . . . . . . . . . . .	Text   	 outwordln
+OutWord  . . . . . . . . . . . .	Text   	 outword
+OutintLn . . . . . . . . . . . .	Text   	 outintln
+Outintln . . . . . . . . . . . .	Text   	 outintln
+Outint . . . . . . . . . . . . .	Text   	 outint
+OutstrLn . . . . . . . . . . . .	Text   	 outstrln
+OutwordLn  . . . . . . . . . . .	Text   	 outwordln
+Outword  . . . . . . . . . . . .	Text   	 outword
+PAGE_EXECUTE_READWRITE . . . . .	Number	 00000040h   
+PAGE_EXECUTE_READ  . . . . . . .	Number	 00000020h   
+PAGE_EXECUTE_WRITECOPY . . . . .	Number	 00000080h   
+PAGE_EXECUTE . . . . . . . . . .	Number	 00000010h   
+PAGE_NOACCESS  . . . . . . . . .	Number	 00000001h   
+PAGE_READONLY  . . . . . . . . .	Number	 00000002h   
+PAGE_READWRITE . . . . . . . . .	Number	 00000004h   
+PAGE_WRITECOPY . . . . . . . . .	Number	 00000008h   
+PAUSE  . . . . . . . . . . . . .	Text   	 pause
+Pause  . . . . . . . . . . . . .	Text   	 pause
+READKEY  . . . . . . . . . . . .	Text   	 readkey
+ReadKey  . . . . . . . . . . . .	Text   	 readkey
+Red  . . . . . . . . . . . . . .	Number	 00000004h   
+STD_ERROR_HANDLE . . . . . . . .	Number	 -0000000Ch   
+STD_INPUT_HANDLE . . . . . . . .	Number	 -0000000Ah   
+STD_OUTPUT_HANDLE  . . . . . . .	Number	 -0000000Bh   
+SetConsoleTitle  . . . . . . . .	Text   	 SetConsoleTitleA
+Start  . . . . . . . . . . . . .	L Near	 000003C0 _TEXT	Public STDCALL
+TRUNCATE_EXISTING  . . . . . . .	Number	 00000005h   
+URLDownloadToFile  . . . . . . .	Text   	 URLDownloadToFileA
+White  . . . . . . . . . . . . .	Number	 0000000Fh   
+Yellow . . . . . . . . . . . . .	Number	 0000000Eh   
+_10  . . . . . . . . . . . . . .	DWord	 0000001D _DATA	
+_imp__MessageBoxA@16 . . . . . .	DWord	 00000000 FLAT	External STDCALL
+_imp___exit  . . . . . . . . . .	DWord	 00000000 FLAT	External STDCALL
+_imp__printf . . . . . . . . . .	DWord	 00000000 FLAT	External STDCALL
+_imp__scanf  . . . . . . . . . .	DWord	 00000000 FLAT	External STDCALL
+_imp__sprintf  . . . . . . . . .	DWord	 00000000 FLAT	External STDCALL
+act  . . . . . . . . . . . . . .	Byte	 00000351 _DATA	
+black  . . . . . . . . . . . . .	Number	 00000000h   
+blue . . . . . . . . . . . . . .	Number	 00000001h   
+bright . . . . . . . . . . . . .	Number	 00000008h   
+brown  . . . . . . . . . . . . .	Number	 00000006h   
+clrscr . . . . . . . . . . . . .	Text   	 ClrScr
+columns1 . . . . . . . . . . . .	Byte	 00000315 _DATA	
+columns2 . . . . . . . . . . . .	Byte	 0000034A _DATA	
+counterI . . . . . . . . . . . .	Byte	 00000384 _DATA	
+counterJ . . . . . . . . . . . .	Byte	 00000385 _DATA	
+counterK . . . . . . . . . . . .	Byte	 00000386 _DATA	
+crt__exit  . . . . . . . . . . .	Text   	 _imp___exit
+crt_printf . . . . . . . . . . .	Text   	 _imp__printf
+crt_scanf  . . . . . . . . . . .	Text   	 _imp__scanf
+crt_sprintf  . . . . . . . . . .	Text   	 _imp__sprintf
+cyan . . . . . . . . . . . . . .	Number	 00000003h   
+darkgray . . . . . . . . . . . .	Number	 00000008h   
+dos  . . . . . . . . . . . . . .	Text   	 DOS
+downloadfile . . . . . . . . . .	Text   	 DownloadFile
+elements1  . . . . . . . . . . .	Byte	 00000316 _DATA	
+elements2  . . . . . . . . . . .	Byte	 0000034B _DATA	
+exete  . . . . . . . . . . . . .	L Near	 00001A0E _TEXT	
+fmt  . . . . . . . . . . . . . .	Byte	 00000021 _DATA	
+gotoxy . . . . . . . . . . . . .	Text   	 gotoXY
+green  . . . . . . . . . . . . .	Number	 00000002h   
+heapblocksize  . . . . . . . . .	Text   	 HeapBlockSize
+index  . . . . . . . . . . . . .	Byte	 0000038B _DATA	
+inputstr . . . . . . . . . . . .	Text   	 InputStr
+lightblue  . . . . . . . . . . .	Number	 00000009h   
+lightgray  . . . . . . . . . . .	Number	 00000007h   
+lightgreen . . . . . . . . . . .	Number	 0000000Ah   
+lightmagenta . . . . . . . . . .	Number	 0000000Dh   
+lightred . . . . . . . . . . . .	Number	 0000000Ch   
+lines1 . . . . . . . . . . . . .	Byte	 00000314 _DATA	
+lines2 . . . . . . . . . . . . .	Byte	 00000349 _DATA	
+magenta  . . . . . . . . . . . .	Number	 00000005h   
+matr1  . . . . . . . . . . . . .	Word	 000002E2 _DATA	
+matr2  . . . . . . . . . . . . .	Word	 00000317 _DATA	
+matr3  . . . . . . . . . . . . .	Word	 00000352 _DATA	
+maxMatrElement . . . . . . . . .	Byte	 000002E1 _DATA	
+msgbox . . . . . . . . . . . . .	Text   	 MsgBox
+mulElementsMatrixLoop  . . . . .	L Near	 00001517 _TEXT	
+mulElementsMatrix  . . . . . . .	L Near	 000014BF _TEXT	
+mulMatrixLoop1 . . . . . . . . .	L Near	 000015B5 _TEXT	
+mulMatrixLoop2 . . . . . . . . .	L Near	 000015BC _TEXT	
+mulMatrixLoop3 . . . . . . . . .	L Near	 000015CC _TEXT	
+mulMatrix  . . . . . . . . . . .	L Near	 00001570 _TEXT	
+nil  . . . . . . . . . . . . . .	DWord 	 00000000h   
+num1 . . . . . . . . . . . . . .	Byte	 0000034D _DATA	
+num2 . . . . . . . . . . . . . .	Byte	 0000034E _DATA	
+num3 . . . . . . . . . . . . . .	Word	 0000034F _DATA	
+num  . . . . . . . . . . . . . .	Byte	 0000034C _DATA	
+outOneMatrix . . . . . . . . . .	L Near	 000003CF _TEXT	
+outTwoMatrix . . . . . . . . . .	L Near	 000008FF _TEXT	
+outch  . . . . . . . . . . . . .	Text   	 outchar
+outintLn . . . . . . . . . . . .	Text   	 outintln
+outi . . . . . . . . . . . . . .	Text   	 outint
+outu . . . . . . . . . . . . . .	Text   	 outword
+outwordLn  . . . . . . . . . . .	Text   	 outwordln
+plusMatrixLoop . . . . . . . . .	L Near	 00001335 _TEXT	
+plusMatrix . . . . . . . . . . .	L Near	 000012E6 _TEXT	
+printBig . . . . . . . . . . . .	L Near	 00001990 _TEXT	
+printLitle . . . . . . . . . . .	L Near	 000019CF _TEXT	
+printMenue . . . . . . . . . . .	L Near	 00000D51 _TEXT	
+printOneMatrixLOOPcolumns  . . .	L Near	 00000831 _TEXT	
+printOneMatrixLOOPline . . . . .	L Near	 0000081B _TEXT	
+printOneMatrix . . . . . . . . .	L Near	 000007F5 _TEXT	
+printOverMax1  . . . . . . . . .	L Near	 00001836 _TEXT	
+printOverMax2  . . . . . . . . .	L Near	 000018E3 _TEXT	
+printThreMatrixLOOPcolumns . . .	L Near	 0000138D _TEXT	
+printThreMatrixLOOPline  . . . .	L Near	 00001386 _TEXT	
+printThreMatrix  . . . . . . . .	L Near	 00001362 _TEXT	
+printTwoMatrixLOOPcolumns  . . .	L Near	 00000CA3 _TEXT	
+printTwoMatrixLOOPline . . . . .	L Near	 00000C9C _TEXT	
+printTwoMatrix . . . . . . . . .	L Near	 00000C7D _TEXT	
+randomize  . . . . . . . . . . .	Text   	 Randomize
+red  . . . . . . . . . . . . . .	Number	 00000004h   
+settextattr  . . . . . . . . . .	Text   	 SetTextAttr
+subMatrixLoop  . . . . . . . . .	L Near	 0000148D _TEXT	
+subMatrix  . . . . . . . . . . .	L Near	 0000143E _TEXT	
+sumIr  . . . . . . . . . . . . .	Word	 0000038E _DATA	
+switch . . . . . . . . . . . . .	Byte	 00000390 _DATA	
+temp1  . . . . . . . . . . . . .	Byte	 00000388 _DATA	
+temp2  . . . . . . . . . . . . .	Byte	 00000389 _DATA	
+temp3  . . . . . . . . . . . . .	Byte	 0000038A _DATA	
+temp . . . . . . . . . . . . . .	Byte	 00000387 _DATA	
+whereX . . . . . . . . . . . . .	Text   	 WhereX
+whereY . . . . . . . . . . . . .	Text   	 WhereY
+wherex . . . . . . . . . . . . .	Text   	 WhereX
+wherey . . . . . . . . . . . . .	Text   	 WhereY
+white  . . . . . . . . . . . . .	Number	 0000000Fh   
+wtemp  . . . . . . . . . . . . .	Word	 0000038C _DATA	
+yellow . . . . . . . . . . . . .	Number	 0000000Eh   
+
+	   0 Warnings
+	   0 Errors
