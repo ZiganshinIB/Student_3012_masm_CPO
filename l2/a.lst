@@ -1,4 +1,4 @@
-Microsoft (R) Macro Assembler Version 6.14.8444		    04/29/23 18:24:54
+Microsoft (R) Macro Assembler Version 6.14.8444		    04/29/23 22:54:20
 a.asm							     Page 1 - 1
 
 
@@ -22,15 +22,10 @@ a.asm							     Page 1 - 1
 
 				COMMENT @
 
-					Ввод двух матриц, сложение матриц, вычитание матриц, умножение матриц, умножеие матрицы на число
-					Числа в матрицах двузначные знаковые, максимальное число элементов матрицы: 25
-					Тип ячеек в вводимых матрицах: 1 байт db -128 +127
-					Следовательно максимальный результат в одной ячейке при перемножении матриц: 99*99*25 = +-245025
-					
-					____________________________________________________________________________________
-					
+					сложение матриц
+					отрцательное сложение матриц
 					умножение матриц
-					____________________________________________________________________________________
+					Матричное умножение матриц
 					
 				@
  000002E1			.data
@@ -93,7 +88,7 @@ a.asm							     Page 1 - 1
 					
 					; Проверка больше или меньше значение если больше то повторяем
  00000618  66| 83 F8 19			cmp		ax, 25
- 0000061C  0F 8F 00001214		jg		printOverMax1;	
+ 0000061C  0F 8F 0000106E		jg		printOverMax1;	
 					;
  00000622  A2 00000316 R		mov 		elements1, al		
 					outstr 	       'Количество элементов ПЕРВОЙ матрицы: '
@@ -165,7 +160,7 @@ a.asm							     Page 1 - 1
 					
 					; Проверка больше или меньше значение если больше то повторяем
  00000AA0  66| 83 F8 19			cmp		ax, 25
- 00000AA4  0F 8F 00000E39		jg		printOverMax2;	
+ 00000AA4  0F 8F 00000C93		jg		printOverMax2;	
 					;
  00000AAA  A2 0000034B R		mov 		elements2, al		
 					outstr 	       'Количество элементов Второй матрицы: '
@@ -184,7 +179,7 @@ a.asm							     Page 1 - 1
 						inint 		matr2[eax]
  00000C67  FE 05 00000384 R			inc 		counterI
  00000C6D  8A 1D 00000384 R			mov		bl, counterI
- 00000C73  3A 1D 00000316 R			CMP 		bl, elements1
+ 00000C73  3A 1D 0000034B R			CMP 		bl, elements2
  00000C79  7C BD				JL		LOOP2
 
 
@@ -257,13 +252,13 @@ a.asm							     Page 1 - 1
 					
  000012C5  B2 05			mov	dl, 5
  000012C7  38 15 00000390 R		cmp	switch, dl
- 000012CD  0F 84 0000029D		je	mulMatrix
+ 000012CD  0F 84 00000299		je	mulMatrix
 					
  000012D3  B2 06			mov	dl, 6
  000012D5  38 15 00000390 R		cmp	switch ,dl
- 000012DB  0F 84 0000072D		je	exete
+ 000012DB  0F 84 00000548		je	exete
 					
- 000012E1  E9 00000728			jmp exete
+ 000012E1  E9 00000543			jmp exete
 
 
  000012E6			plusMatrix:
@@ -383,444 +378,168 @@ a.asm							     Page 1 - 1
  000014E9  3A 05 00000387 R		cmp	al, temp
  000014EF  0F 85 FFFFF85C		JNE	printMenue
 					; ------------------------------------------------------
- 000014F5  B8 00000000			mov eax, 0 ; Обнулим
- 000014FA  C6 05 00000384 R		mov counterI, 0;
+					
+ 000014F5  C6 05 00000384 R		mov counterI, 0;
 	   00
- 00001501  C6 05 00000385 R		mov counterJ, 0;
+ 000014FC  C6 05 00000385 R		mov counterJ, 0;
 	   00
- 00001508  8A 1D 00000316 R		mov bl, elements1;
- 0000150E  66| C7 05			mov wtemp, 0;
-	   0000038C R
-	   0000
- 00001517				mulElementsMatrixLoop:
-						;matr[3]=matr1[i] - matr2[i]
- 00001517  A0 00000385 R			mov 	al, counterJ;
-						; temp = matr1[i]
-						; eax = i*2
- 0000151C  66| 8B 90				mov 	dx, matr1[eax]
+ 00001503  8A 1D 00000316 R		mov bl, elements1;
+ 00001509				mulElementsMatrixLoop:
+ 00001509  B8 00000000				mov eax, 0 ; Обнулим
+						;outstr	'Looper: '
+						;outint  counterI
+						;outstr	'Index: '
+						;outint  counterJ
+						;outstr	':: '
+ 0000150E  A0 00000385 R			mov 	al, counterJ; al is Index
+ 00001513  66| 8B 90				mov 	dx, matr1[eax]; 
 	   000002E2 R
- 00001523  66| 89 15				mov		wtemp, dx
+ 0000151A  66| 89 15				mov		wtemp, dx	  ; wtemp = matr1[index]		
 	   0000038C R
-						; eax = matr2[eax]
- 0000152A  66| 8B 80				mov 	ax, matr2[eax]
+ 00001521  66| 8B 80				mov 	ax, matr2[eax] ; ax = matr2[index]
 	   00000317 R
-						; wtemp = matr2[eax] * wtemp
- 00001531  66| F7 25				MUL		wtemp;
+						;outint 	wtemp
+						;outstr	'*'
+						;outint	ax
+						;outstr  '='
+ 00001528  66| F7 2D				IMUL		wtemp		;dx = ax *wtemp 
 	   0000038C R
- 00001538  66| A3				mov 	wtemp, ax;
+						;outintln	ax
+ 0000152F  66| A3				mov 	wtemp, ax;		
 	   0000038C R
- 0000153E  A0 00000385 R			mov		al, counterJ;
- 00001543  66| 8B 15				mov 	dx, wtemp;
+ 00001535  B8 00000000				mov		eax, 0
+ 0000153A  A0 00000385 R			mov		al, counterJ	; al is Index
+ 0000153F  66| 8B 15				mov		dx,  wtemp
 	   0000038C R
- 0000154A  66| 89 90				mov		matr3[eax], dx; 
+ 00001546  66| 89 90				mov 	matr3[eax], dx;	
 	   00000352 R
- 00001551  80 05 00000385 R			ADD		counterJ,2
+						;outintln matr3[eax]
+ 0000154D  80 05 00000385 R			ADD		counterJ,2		
 	   02
- 00001558  FE 05 00000384 R			inc		counterI;
- 0000155E  38 1D 00000384 R			cmp		counterI, bl
- 00001564  7C B1				JL		mulElementsMatrixLoop
- 00001566  E9 FFFFFDF7				jmp 	printThreMatrix	
- 0000156B  E9 FFFFF7E1			jmp	printMenue
+ 00001554  FE 05 00000384 R			inc		counterI;
+ 0000155A  38 1D 00000384 R			cmp		counterI, bl
+ 00001560  7C A7				JL		mulElementsMatrixLoop
+ 00001562  E9 FFFFFDFB				jmp 	printThreMatrix	
+ 00001567  E9 FFFFF7E5			jmp	printMenue
 
- 00001570			mulMatrix:
+ 0000156C			mulMatrix:
 					; Сравниваем размерность матриц row == col and col == row
- 00001570  B8 00000000			mov 	eax, 0
- 00001575  A0 00000315 R		mov	al, columns1
- 0000157A  3A 05 00000349 R		cmp	al, lines2
- 00001580  0F 85 FFFFF7CB		JNE	printMenue
+ 0000156C  B8 00000000			mov 	eax, 0
+ 00001571  A0 00000315 R		mov	al, columns1
+ 00001576  3A 05 00000349 R		cmp	al, lines2
+ 0000157C  0F 85 FFFFF7CF		JNE	printMenue
 					; ------------------------------------------------------
- 00001586  B8 00000000			mov eax, 0 ; Обнулим
- 0000158B  BA 00000000			mov edx, 0 ;
- 00001590  C6 05 00000384 R		mov counterI, 0;
+ 00001582  B8 00000000			mov eax, 0 ; Обнулим
+ 00001587  BA 00000000			mov edx, 0 ;
+ 0000158C  C6 05 00000384 R		mov counterI, 0;
 	   00
 					
 					
- 00001597  C6 05 0000038B R		mov index, 0;
+ 00001593  C6 05 0000038B R		mov index, 0;
 	   00
- 0000159E  C6 05 00000387 R		mov temp,  2
+ 0000159A  C6 05 00000387 R		mov temp,  2
 	   02
- 000015A5  C6 05 00000388 R		mov temp1, 0;
+ 000015A1  C6 05 00000388 R		mov temp1, 0;
 	   00
- 000015AC  66| C7 05			mov wtemp, 0;
+ 000015A8  66| C7 05			mov wtemp, 0;
 	   0000038C R
 	   0000
- 000015B5				mulMatrixLoop1:
- 000015B5  C6 05 00000385 R			mov counterJ, 0;
+ 000015B1				mulMatrixLoop1:
+ 000015B1  C6 05 00000385 R			mov counterJ, 0;
 	   00
- 000015BC					mulMatrixLoop2:
- 000015BC  66| C7 05					mov sumIr, 0;
+ 000015B8					mulMatrixLoop2:
+ 000015B8  66| C7 05					mov sumIr, 0;
 	   0000038E R
 	   0000
- 000015C5  C6 05 00000386 R				mov counterK, 0;
+ 000015C1  C6 05 00000386 R				mov counterK, 0;
 	   00
- 000015CC						mulMatrixLoop3:
- 000015CC  B8 00000000						mov	eax, 0;
+ 000015C8						mulMatrixLoop3:
+ 000015C8  B8 00000000						mov	eax, 0;
 								; m1[1][1]*m2[1][1] + m1[1][2]*m2[2][1].... 
 								; wtemp = m1[1*lines1+1]* m1[2*lines2+1] + m1[1*lines1+2]*m2[2*lines2+1]......
 								; wtemp - is sumator
 								; eax =  counterI*lines1+counterJ ; || bl=counterI ; eax = bl * lines1; bl = bl+counterJ
- 000015D1  A0 00000384 R					mov 	al, counterI;
- 000015D6  F6 25 00000315 R					MUL		columns1;
- 000015DC  02 05 00000386 R					add 	al, counterK;
- 000015E2  F6 25 00000387 R					MUL		temp
+ 000015CD  A0 00000384 R					mov 	al, counterI;
+ 000015D2  F6 25 00000315 R					MUL		columns1;
+ 000015D8  02 05 00000386 R					add 	al, counterK;
+ 000015DE  F6 25 00000387 R					MUL		temp
 								; mov 	index, al
- 000015E8  66| 8B 80						mov		ax, matr1[eax]
+ 000015E4  66| 8B 80						mov		ax, matr1[eax]
 	   000002E2 R
-								outint ax;
- 00001609  66| A3						mov		wtemp, ax ; matr1[index]
+ 000015EB  66| A3						mov		wtemp, ax ; matr1[index]
 	   0000038C R
 								
 								; wtemp = m1[ebx]
 								; eax =  counterJ*lines2+counterI ; || eax=counterJ ; eax = eax * lines2
 								; dx = wtemp
 								; dx + m2[eax]
- 0000160F  A0 00000386 R					mov 	al, counterK;
- 00001614  F6 25 0000034A R					MUL		columns2;
- 0000161A  02 05 00000385 R					add 	al, counterJ;
- 00001620  F6 25 00000387 R					MUL		temp
- 00001626  66| 8B 80						mov 	ax, matr2[eax]
+ 000015F1  A0 00000386 R					mov 	al, counterK;
+ 000015F6  F6 25 0000034A R					MUL		columns2;
+ 000015FC  02 05 00000385 R					add 	al, counterJ;
+ 00001602  F6 25 00000387 R					MUL		temp
+ 00001608  66| 8B 80						mov 	ax, matr2[eax]
 	   00000317 R
-								outstr '*';
-								outint 	ax;
- 00001684  66| F7 25						MUL		wtemp;
+ 0000160F  66| F7 25						MUL		wtemp;
 	   0000038C R
-								outstr '=';
-								outint 	ax;
-								outstrln ;
- 0000174D  66| 01 05						ADD 	sumIr, ax;
+ 00001616  66| 01 05						ADD 	sumIr, ax;
 	   0000038E R
 								
 								
- 00001754  FE 05 00000386 R					inc counterK
- 0000175A  8A 1D 00000386 R					mov bl, counterK;
- 00001760  3A 1D 00000315 R					cmp bl, columns1
- 00001766  0F 8C FFFFFE60					JL	mulMatrixLoop3;
+ 0000161D  FE 05 00000386 R					inc counterK
+ 00001623  8A 1D 00000386 R					mov bl, counterK;
+ 00001629  3A 1D 00000315 R					cmp bl, columns1
+ 0000162F  7C 97						JL	mulMatrixLoop3;
 								;-------------------------------------------
-							outstrln
- 000017D7  B8 00000000					mov		eax, 0;
- 000017DC  A0 00000384 R				mov 	al, counterI;
- 000017E1  F6 25 0000034A R				MUL		columns2;
- 000017E7  02 05 00000385 R				add 	al, counterJ;
- 000017ED  F6 25 00000387 R				MUL		temp
- 000017F3  66| 8B 15					mov		dx, sumIr;
+ 00001631  B8 00000000					mov		eax, 0;
+ 00001636  A0 00000384 R				mov 	al, counterI;
+ 0000163B  F6 25 0000034A R				MUL		columns2;
+ 00001641  02 05 00000385 R				add 	al, counterJ;
+ 00001647  F6 25 00000387 R				MUL		temp
+ 0000164D  66| 8B 15					mov		dx, sumIr;
 	   0000038E R
- 000017FA  66| 89 90					mov 	matr3[eax], dx;
+ 00001654  66| 89 90					mov 	matr3[eax], dx;
 	   00000352 R
 							
 							
- 00001801  FE 05 00000385 R				inc counterJ
- 00001807  8A 1D 00000385 R				mov bl, counterJ;
- 0000180D  3A 1D 0000034A R				cmp bl, columns2 ; j < columns2
- 00001813  0F 8C FFFFFDA3				JL	mulMatrixLoop2;
+ 0000165B  FE 05 00000385 R				inc counterJ
+ 00001661  8A 1D 00000385 R				mov bl, counterJ;
+ 00001667  3A 1D 0000034A R				cmp bl, columns2 ; j < columns2
+ 0000166D  0F 8C FFFFFF45				JL	mulMatrixLoop2;
 						
- 00001819  FE 05 00000384 R			inc counterI
- 0000181F  8A 1D 00000384 R			mov bl, counterI;
- 00001825  3A 1D 00000314 R			cmp bl, lines1
- 0000182B  0F 8C FFFFFD84			JL	mulMatrixLoop1;
- 00001831  E9 FFFFFB2C				jmp printThreMatrix
+ 00001673  FE 05 00000384 R			inc counterI
+ 00001679  8A 1D 00000384 R			mov bl, counterI;
+ 0000167F  3A 1D 00000314 R			cmp bl, lines1
+ 00001685  0F 8C FFFFFF26			JL	mulMatrixLoop1;
+ 0000168B  E9 FFFFFCD2				jmp printThreMatrix
 
 
 					
 					
 
 
- 00001836			printOverMax1:
+ 00001690			printOverMax1:
 					outstrln		'Кол-во элиментов больше'
- 000018DE  E9 FFFFEAEC			jmp			outOneMatrix;
+ 00001738  E9 FFFFEC92			jmp			outOneMatrix;
 
 
- 000018E3			printOverMax2:
+ 0000173D			printOverMax2:
 					outstrln		'Кол-во элиментов больше'
- 0000198B  E9 FFFFEF6F			jmp			outTwoMatrix;
+ 000017E5  E9 FFFFF115			jmp			outTwoMatrix;
 					
 
- 00001990			printBig:
+ 000017EA			printBig:
 					outstr		'Это больше'
- 000019CD  EB 3F			jmp		exete			;
- 000019CF			printLitle:
-					outstr		'Это больше'
- 00001A0C  EB 00			jmp		exete			;
- 00001A0E			exete:
+ 00001827  EB 00			jmp		exete			;
+
+ 00001829			exete:
 					exit
 					end Start
 						
 
 
-				COMMENT @
-
-
-
-					mov 		elements1,al		; Записываем количество элементов ПЕРВОЙ матрицы
-					
-					
-					outstrln 'Введите последовательно элементы ПЕРВОЙ матрицы'
-					mov bl,elements1; Записываем в региср bl количество элементов ПЕРВОЙ матрицы
-					mov eax,0; Записываем в региср esi номер элемента ПЕРВОЙ матрицы
-						CIKL1:
-						inint matr1[eax]; Записываем элемент в массив
-						INC eax; Сдвигаем адрес для записи следующего элемента массива
-						DEC bl; Уменьшаем счетчик количества элементов ПЕРВОЙ матрицы
-						CMP bl,0; Проверяем, не ввели ли все элементы ПЕРВОЙ матрицы
-						JG CIKL1; Если ввели не все элементы ПЕРВОЙ матрицы, то повторяем цикл
-					
-					outstrln 'ПЕРВАЯ матрица'; Вывод ПЕРВОЙ матрицы
-					mov eax,0; обнуляем счетчики
-					mov edx,0; обнуляем счетчики
-					mov ecx,0; обнуляем счетчики
-					mov cl,columns1; Записываем в регистр ecx количество столбццов матрицы
-					sub edx,ecx; Указываем на индекс первой строки матрицы (уменьшаем индекс строки на количесвто элементов в строке * тип элементов)
-					L2:
-					mov ebx,-1; Указываем на певый столбец матрицы
-					add edx,ecx; Переходим на следующий индекс строки матрицы (увеличиваем индекс строки на количесвто элементов в строке * тип элементов)
-					L1:
-					inc ebx; Переходим на следующий столбец в строке матрицы
-					outint matr1[ebx+edx],8; Выводим элемент матрицы
-					mov al,bl; Записываем в регистр al номер столбца (bl)
-					inc al;Увеличиваем его для сравнения
-					cmp al, columns1; Проверяем, не дошли ли до конца строки
-						JL L1; Если не дошли до конца строки, то продолжаем выводить элементы
-					newline
-					mov eax,edx; Записываем в регистр eax индекс строки (edx)
-					DIV cl; Делим индекс строки на количество элементов, для получения номера строки
-					inc al;Увеличиваем его для сравнения
-					cmp al, lines1; Проверяем, не дошли ли до последней строки в матрице
-						JL L2; Если не дошли до последней строки в матрице, то продолжаем выводить элементы
-					
-					outstrln 'Введите количество строк ВТОРОЙ матрицы'
-					inint lines2; Ввод количества строк ВТОРОЙ матрицы
-					outstrln 'Введите количество столбцов ВТОРОЙ матрицы'
-					inint columns2; Ввод количества столбцов ВТОРОЙ матрицы
-					mov al,lines2
-					MUL columns2; Умножаем строки на столбцы и получаем количество элементов ВТОРОЙ матрицы
-					mov elements2,al; Записываем количество элементов ВТОРОЙ матрицы
-					outstr 'Количество элементов ВТОРОЙ матрицы: '
-					outwordln elements2; Выводим количество элементов ВТОРОЙ матрицы
-					
-					outstrln 'Введите последовательно элементы ВТОРОЙ матрицы'
-					mov bl,elements2; Записываем в региср bl количество элементов ВТОРОЙ матрицы
-					mov eax,0; Записываем в региср esi номер элемента ВТОРОЙ матрицы
-						CIKL2:
-						inint matr2[eax]; Записываем элемент в массив
-						INC eax; Сдвигаем адрес для записи следующего элемента массива
-						DEC bl; Уменьшаем счетчик количества элементов ВТОРОЙ матрицы
-						CMP bl,0; Проверяем, не ввели ли все элементы ВТОРОЙ матрицы
-						JG CIKL2; Если ввели не все элементы ВТОРОЙ матрицы, то повторяем цикл
-					
-					outstrln 'ВТОРАЯ матрица'; Вывод ВТОРОЙ матрицы
-					mov eax,0; обнуляем счетчики
-					mov edx,0; обнуляем счетчики
-					mov ecx,0; обнуляем счетчики
-					mov cl,columns2; Записываем в регистр ecx количество столбццов матрицы
-					sub edx,ecx; Указываем на индекс первой строки матрицы (уменьшаем индекс строки на количесвто элементов в строке * тип элементов)
-					L4:
-					mov ebx,-1; Указываем на певый столбец матрицы
-					add edx,ecx; Переходим на следующий индекс строки матрицы (увеличиваем индекс строки на количесвто элементов в строке * тип элементов)
-					L3:
-					inc ebx; Переходим на следующий столбец в строке матрицы
-					outint matr2[ebx+edx],8; Выводим элемент матрицы
-					mov al,bl; Записываем в регистр al номер столбца (bl)
-					inc al;Увеличиваем его для сравнения
-					cmp al, columns2; Проверяем, не дошли ли до конца строки
-						JL L3; Если не дошли до конца строки, то продолжаем выводить элементы
-					newline
-					mov eax,edx; Записываем в регистр eax индекс строки (edx)
-					DIV cl; Делим индекс строки на количество элементов, для получения номера строки
-					inc al;Увеличиваем его для сравнения
-					cmp al, lines2; Проверяем, не дошли ли до последней строки в матрице
-						JL L4; Если не дошли до последней строки в матрице, то продолжаем выводить элементы
-				;____________________________________________________________________________________	
-
-				ACTCHOISE:
-					outstrln 'Выберите необходимое действие, введите номер варианта:'
-					outstrln '1) Сложение матриц'
-					outstrln '2) Вычитание матриц'
-					outstrln '3) Умножение матриц. Будет умножена ПЕРВАЯ матрица на ВТОРУЮ'
-					outstrln '4) Умножение матрицы на число. Будет умножена ПЕРВАЯ матрица на число'
-					outstrln '5) Выход'
-					inint act; Выбирается действие
-					cmp act,1; Если выбрано сложение
-						je ADDITION; Переходим к сложению
-					cmp act,2; Если выбрано вычитание
-						je SUBTRACTION; Переходим к вычитанию
-					cmp act,3; Если выбрано перемножение
-						je MULTIPLICATION; Переходим к перемножению
-					cmp act,4; Если выбрано умножение на число
-						je NUMMULTIPLICATION; Переходим к умножение на число
-					cmp act,5; Если выбран выход
-						je FINISH; Переходим к выходу
-					outstrln 'Неверный выбор'; Если введено не число от 1 до 5 то выводим ошибку и начинаем с начала
-					jmp ACTCHOISE
-					
-				ADDITION:
-					newline
-					outstrln '1) Сложение матриц'
-					mov eax,0; обнуляем счетчики
-					mov edx,0; обнуляем счетчики
-					mov ecx,0; обнуляем счетчики
-					mov cl,columns1; Т.к. матрицы одинакового размера записываем в регистр ecx количество столбццов матрицы
-					sub edx,ecx; Указываем на индекс первой строки матрицы (уменьшаем индекс строки на количесвто элементов в строке * тип элементов)
-					L6:
-					mov ebx,-1; Указываем на певый столбец матрицы
-					add edx,ecx; Переходим на следующий индекс строки матрицы (увеличиваем индекс строки на количесвто элементов в строке * тип элементов)
-					L5:
-					inc ebx; Переходим на следующий столбец в строке матрицы
-					mov al,matr1[ebx+edx]; Записываем в регистр al элемент первой матрицы для сложения
-					add al,matr2[ebx+edx]; Складываем элементы первой и второй матрицы
-					outint al,8; Выводим элемент матрицы
-					mov eax,ebx; Записываем в регистр eax номер столбца (ebx)
-					inc al;Увеличиваем его для сравнения
-					cmp al, columns2; Проверяем, не дошли ли до конца строки
-						JL L5; Если не дошли до конца строки, то продолжаем выводить элементы
-					newline
-					mov eax,edx; Записываем в регистр eax индекс строки (edx)
-					DIV cl; Делим индекс строки на количество элементов, для получения номера строки
-					inc al;Увеличиваем его для сравнения
-					cmp al, lines2; Проверяем, не дошли ли до последней строки в матрице
-						JL L6; Если не дошли до последней строки в матрице, то продолжаем выводить элементы
-					jmp ACTCHOISE
-
-				SUBTRACTION:
-					newline
-					outstrln '2) Вычитание матриц'
-					outstrln 'Введите 1 чтобы вычесть ВТОРУЮ матрицу из ПЕРВОЙ'
-					outstrln 'Введите 2 чтобы вычесть ПЕРВУЮ матрицу из ВТОРОЙ'
-					inint si; Выбираем какую матрицу из какой будем вычитать
-					mov eax,0; обнуляем счетчики
-					mov edx,0; обнуляем счетчики
-					mov ecx,0; обнуляем счетчики
-					mov cl,columns1; Т.к. матрицы одинакового размера записываем в регистр ecx количество столбццов матрицы
-					sub edx,ecx; Указываем на индекс первой строки матрицы (уменьшаем индекс строки на количесвто элементов в строке * тип элементов)
-					L8:
-					mov ebx,-1; Указываем на певый столбец матрицы
-					add edx,ecx; Переходим на следующий индекс строки матрицы (увеличиваем индекс строки на количесвто элементов в строке * тип элементов)
-					L7:
-					inc ebx; Переходим на следующий столбец в строке матрицы
-					cmp si,1; Смотрим какую матрицу из какой будем вычитать
-						je M1SUBM2
-					jmp M2SUBM1
-				M1SUBM2:
-					mov al,matr1[ebx+edx]; Записываем в регистр al элемент первой матрицы для вычитания
-					sub al,matr2[ebx+edx]; Вычитаем элементы второй из первой матрицы
-					outint al,8; Выводим элемент матрицы
-					jmp CIKL3
-				M2SUBM1:
-					mov al,matr2[ebx+edx]; Записываем в регистр al элемент второй матрицы для вычитания
-					sub al,matr1[ebx+edx]; Вычитаем элементы первой из второй матрицы
-					outint al,8; Выводим элемент матрицы
-					jmp CIKL3
-				CIKL3:
-					mov eax,ebx; Записываем в регистр eax номер столбца (ebx)
-					inc al;Увеличиваем его для сравнения
-					cmp al, columns2; Проверяем, не дошли ли до конца строки
-						JL L7; Если не дошли до конца строки, то продолжаем выводить элементы
-					newline
-					mov eax,edx; Записываем в регистр eax индекс строки (edx)
-					DIV cl; Делим индекс строки на количество элементов, для получения номера строки
-					inc al;Увеличиваем его для сравнения
-					cmp al, lines2; Проверяем, не дошли ли до последней строки в матрице
-						JL L8; Если не дошли до последней строки в матрице, то продолжаем выводить элементы
-					jmp ACTCHOISE
-					
-				MULTIPLICATION:
-					newline
-					outstrln '3) Умножение матриц'
-					outstrln 'Будет умножена ПЕРВАЯ матрица на ВТОРУЮ'
-
-				; lines1 columns2
-					
-					mov edi,0
-					mov eax,0; обнуляем счетчики
-					mov edx,0; обнуляем счетчики
-					mov ecx,0; обнуляем счетчики
-					mov cl,columns1; Записываем в регистр ecx количество столбццов матрицы
-					sub edx,ecx; Указываем на индекс первой строки матрицы (уменьшаем индекс строки на количесвто элементов в строке * тип элементов)
-					L12:
-					mov ebx,-1; Указываем на певый столбец матрицы
-					add edx,ecx; Переходим на следующий индекс строки матрицы (увеличиваем индекс строки на количесвто элементов в строке * тип элементов)
-					L11:
-					inc ebx; Переходим на следующий столбец в строке матрицы
-					mov num1,matr1[ebx+edx]; Записываем в num1 элемент из ПЕРВОЙ матрицы для умножения
-					
-					mov eax,0
-					mov eax,ebx
-					dec eax
-					mul columns2; записали в ax индекс строки элемента 2 матрицы
-					mov esi,edx; Записали в esi индекс столбца ВТОРОЙ матрицы
-					mov num2,matr2[eax,esi]; Записываем в num2 элемент из ВТОРОЙ матрицы для умножения
-					mov al,num1
-					mul num2; умножаем num1*num2
-					add num3,ax; складываем перемноженные значения
-					
-					mov al,bl; Записываем в регистр al номер столбца (bl)
-					inc al;Увеличиваем его для сравнения
-					cmp al, columns1; Проверяем, не дошли ли до конца строки
-						JL L11; Если не дошли до конца строки, то продолжаем выводить элементы
-					outint num3,8; выводим символ
-					mov num3,0
-					cmp edi,
-					mov eax,edx; Записываем в регистр eax индекс строки (edx)
-					DIV cl; Делим индекс строки на количество элементов, для получения номера строки
-					inc al;Увеличиваем его для сравнения
-					cmp al, lines2; Проверяем, не дошли ли до последней строки в матрице
-						JL L12; Если не дошли до последней строки в матрице, то продолжаем выводить элементы
-					
-
-					jmp ACTCHOISE
-
-				NUMMULTIPLICATION:
-					newline
-					outstrln '4) Умножение матрицы на число'
-					outstrln 'Будет умножена ПЕРВАЯ матрица на число'
-					outstrln 'Введите число от 1 до 100, на которое будет умножена матрица'
-					inint num; Вводим число, на которое будем умножать матрицу
-					mov eax,0; обнуляем счетчики
-					mov edx,0; обнуляем счетчики
-					mov ecx,0; обнуляем счетчики
-					mov cl,columns1; Записываем в регистр ecx количество столбцов матрицы
-					sub edx,ecx; Указываем на индекс первой строки матрицы (уменьшаем индекс строки на количесвто элементов в строке * тип элементов)
-					L10:
-					mov ebx,-1; Указываем на певый столбец матрицы
-					add edx,ecx; Переходим на следующий индекс строки матрицы (увеличиваем индекс строки на количесвто элементов в строке * тип элементов)
-					L9:
-					inc ebx; Переходим на следующий столбец в строке матрицы
-					mov al,matr1[ebx+edx]; Записываем в регистр al элемент из матрицы для умножения
-					cmp al,0; Проверяем не отрицательное ли число
-						jg POSITIV; Если положительное то прыгаем на метку POSITIV
-					neg al; Если отрицательное, тогда делаем его положительным
-					mul num; Умножаем элемент матрицы на число
-					neg ax; Делаем число отрицательным
-					outint ax,8; Выводим элемент матрицы
-					jmp NEGATIVE
-				POSITIV:
-					mul num; Умножаем элемент матрицы на число
-					outint ax,8; Выводим элемент матрицы
-				NEGATIVE:
-					mov al,bl; Записываем в регистр al номер столбца (bl)
-					inc al;Увеличиваем его для сравнения
-					cmp al, columns1; Проверяем, не дошли ли до конца строки
-						JL L9; Если не дошли до конца строки, то продолжаем выводить элементы
-					newline
-					mov eax,edx; Записываем в регистр eax индекс строки (edx)
-					DIV cl; Делим индекс строки на количество элементов, для получения номера строки
-					inc al;Увеличиваем его для сравнения
-					cmp al, lines1; Проверяем, не дошли ли до последней строки в матрице
-						JL L10; Если не дошли до последней строки в матрице, то продолжаем выводить элементы
-					jmp ACTCHOISE
-					
-					Ввод двух матриц, сложение матриц, вычитание матриц, умножение матриц, умножеие матрицы на число
-					Числа в матрицах двузначные знаковые, максимальное число элементов матрицы: 25
-					Тип ячеек в вводимых матрицах: 1 байт db -128 +127
-					Следовательно максимальный результат в одной ячейке при перемножении матриц: 99*99*25 = +-245025
-					
-					____________________________________________________________________________________
-					
-					умножение матриц
-					____________________________________________________________________________________
-					
-				@
 
 	
-Microsoft (R) Macro Assembler Version 6.14.8444		    04/29/23 18:24:54
+Microsoft (R) Macro Assembler Version 6.14.8444		    04/29/23 22:54:20
 a.asm							     Symbols 2 - 1
 
 
@@ -931,8 +650,8 @@ Segments and Groups:
 
 FLAT . . . . . . . . . . . . . .	GROUP
 STACK  . . . . . . . . . . . . .	32 Bit	 00001000 Para	  Stack	  'STACK'	 
-_DATA  . . . . . . . . . . . . .	32 Bit	 000022FF Para	  Public  'DATA'	
-_TEXT  . . . . . . . . . . . . .	32 Bit	 00001A16 Para	  Public  'CODE'	
+_DATA  . . . . . . . . . . . . .	32 Bit	 00002077 Para	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 00001831 Para	  Public  'CODE'	
 
 
 Procedures,  parameters and locals:
@@ -1294,83 +1013,37 @@ Symbols:
 ??017E . . . . . . . . . . . . .	Byte	 00001C9C _DATA	
 ??017F . . . . . . . . . . . . .	L Near	 000013DB _TEXT	
 ??0180 . . . . . . . . . . . . .	L Near	 0000140F _TEXT	
-??0181 . . . . . . . . . . . . .	Number	 00000000h   
-??0182 . . . . . . . . . . . . .	Number	 00000001h   
-??0183 . . . . . . . . . . . . .	Number	 00000000h   
+??0181 . . . . . . . . . . . . .	Byte	 00001DE5 _DATA	
+??0182 . . . . . . . . . . . . .	Byte	 00001DCD _DATA	
+??0183 . . . . . . . . . . . . .	Text   	 "
 ??0184 . . . . . . . . . . . . .	Byte	 00001DCC _DATA	
-??018C . . . . . . . . . . . . .	Number	 00000002h   
-??018E . . . . . . . . . . . . .	Byte	 00001DD2 _DATA	
-??018F . . . . . . . . . . . . .	Byte	 00001DD0 _DATA	
-??0190 . . . . . . . . . . . . .	Text   	 "
-??0191 . . . . . . . . . . . . .	Byte	 00001DCF _DATA	
-??0193 . . . . . . . . . . . . .	L Near	 00001656 _TEXT	
-??0194 . . . . . . . . . . . . .	Number	 00000000h   
-??0195 . . . . . . . . . . . . .	Number	 00000001h   
+??0186 . . . . . . . . . . . . .	L Near	 000016B9 _TEXT	
+??0187 . . . . . . . . . . . . .	Number	 00000000h   
+??0188 . . . . . . . . . . . . .	Byte	 00001DE8 _DATA	
+??018A . . . . . . . . . . . . .	Byte	 00001F17 _DATA	
+??018B . . . . . . . . . . . . .	Byte	 00001DEB _DATA	
+??018C . . . . . . . . . . . . .	Text   	 o
+??018D . . . . . . . . . . . . .	Byte	 00001DEA _DATA	
+??018E . . . . . . . . . . . . .	L Near	 000016EC _TEXT	
+??018F . . . . . . . . . . . . .	L Near	 00001720 _TEXT	
+??0190 . . . . . . . . . . . . .	Byte	 00001F33 _DATA	
+??0191 . . . . . . . . . . . . .	Byte	 00001F1B _DATA	
+??0192 . . . . . . . . . . . . .	Text   	 "
+??0193 . . . . . . . . . . . . .	Byte	 00001F1A _DATA	
+??0195 . . . . . . . . . . . . .	L Near	 00001766 _TEXT	
 ??0196 . . . . . . . . . . . . .	Number	 00000000h   
-??0197 . . . . . . . . . . . . .	Byte	 00001DD5 _DATA	
-??019F . . . . . . . . . . . . .	Number	 00000002h   
-??01A1 . . . . . . . . . . . . .	Byte	 00001DDB _DATA	
-??01A2 . . . . . . . . . . . . .	Byte	 00001DD9 _DATA	
-??01A3 . . . . . . . . . . . . .	Text   	 "
-??01A4 . . . . . . . . . . . . .	Byte	 00001DD8 _DATA	
-??01A6 . . . . . . . . . . . . .	L Near	 000016B4 _TEXT	
-??01A7 . . . . . . . . . . . . .	Number	 00000000h   
-??01A8 . . . . . . . . . . . . .	Number	 00000001h   
-??01A9 . . . . . . . . . . . . .	Number	 00000000h   
-??01AA . . . . . . . . . . . . .	Byte	 00001DDE _DATA	
-??01B2 . . . . . . . . . . . . .	Number	 00000002h   
-??01B4 . . . . . . . . . . . . .	Number	 00000000h   
-??01B5 . . . . . . . . . . . . .	Byte	 00001DE1 _DATA	
-??01B7 . . . . . . . . . . . . .	Byte	 00001F10 _DATA	
-??01B8 . . . . . . . . . . . . .	Byte	 00001DE4 _DATA	
-??01B9 . . . . . . . . . . . . .	Text   	 o
-??01BA . . . . . . . . . . . . .	Byte	 00001DE3 _DATA	
-??01BB . . . . . . . . . . . . .	L Near	 00001701 _TEXT	
-??01BC . . . . . . . . . . . . .	L Near	 00001735 _TEXT	
-??01BD . . . . . . . . . . . . .	Number	 00000000h   
-??01BE . . . . . . . . . . . . .	Byte	 00001F13 _DATA	
-??01C0 . . . . . . . . . . . . .	Byte	 00002042 _DATA	
-??01C1 . . . . . . . . . . . . .	Byte	 00001F16 _DATA	
-??01C2 . . . . . . . . . . . . .	Text   	 o
-??01C3 . . . . . . . . . . . . .	Byte	 00001F15 _DATA	
-??01C4 . . . . . . . . . . . . .	L Near	 0000178B _TEXT	
-??01C5 . . . . . . . . . . . . .	L Near	 000017BF _TEXT	
-??01C6 . . . . . . . . . . . . .	Byte	 0000205E _DATA	
-??01C7 . . . . . . . . . . . . .	Byte	 00002046 _DATA	
-??01C8 . . . . . . . . . . . . .	Text   	 "
-??01C9 . . . . . . . . . . . . .	Byte	 00002045 _DATA	
-??01CB . . . . . . . . . . . . .	L Near	 0000185F _TEXT	
-??01CC . . . . . . . . . . . . .	Number	 00000000h   
-??01CD . . . . . . . . . . . . .	Byte	 00002061 _DATA	
-??01CF . . . . . . . . . . . . .	Byte	 00002190 _DATA	
-??01D0 . . . . . . . . . . . . .	Byte	 00002064 _DATA	
-??01D1 . . . . . . . . . . . . .	Text   	 o
-??01D2 . . . . . . . . . . . . .	Byte	 00002063 _DATA	
-??01D3 . . . . . . . . . . . . .	L Near	 00001892 _TEXT	
-??01D4 . . . . . . . . . . . . .	L Near	 000018C6 _TEXT	
-??01D5 . . . . . . . . . . . . .	Byte	 000021AC _DATA	
-??01D6 . . . . . . . . . . . . .	Byte	 00002194 _DATA	
-??01D7 . . . . . . . . . . . . .	Text   	 "
-??01D8 . . . . . . . . . . . . .	Byte	 00002193 _DATA	
-??01DA . . . . . . . . . . . . .	L Near	 0000190C _TEXT	
-??01DB . . . . . . . . . . . . .	Number	 00000000h   
-??01DC . . . . . . . . . . . . .	Byte	 000021AF _DATA	
-??01DE . . . . . . . . . . . . .	Byte	 000022DE _DATA	
-??01DF . . . . . . . . . . . . .	Byte	 000021B2 _DATA	
-??01E0 . . . . . . . . . . . . .	Text   	 o
-??01E1 . . . . . . . . . . . . .	Byte	 000021B1 _DATA	
-??01E2 . . . . . . . . . . . . .	L Near	 0000193F _TEXT	
-??01E3 . . . . . . . . . . . . .	L Near	 00001973 _TEXT	
-??01E4 . . . . . . . . . . . . .	Byte	 000022ED _DATA	
-??01E5 . . . . . . . . . . . . .	Byte	 000022E2 _DATA	
-??01E6 . . . . . . . . . . . . .	Text   	 "
-??01E7 . . . . . . . . . . . . .	Byte	 000022E1 _DATA	
-??01E9 . . . . . . . . . . . . .	L Near	 000019B9 _TEXT	
-??01EA . . . . . . . . . . . . .	Byte	 000022FC _DATA	
-??01EB . . . . . . . . . . . . .	Byte	 000022F1 _DATA	
-??01EC . . . . . . . . . . . . .	Text   	 "
-??01ED . . . . . . . . . . . . .	Byte	 000022F0 _DATA	
-??01EF . . . . . . . . . . . . .	L Near	 000019F8 _TEXT	
+??0197 . . . . . . . . . . . . .	Byte	 00001F36 _DATA	
+??0199 . . . . . . . . . . . . .	Byte	 00002065 _DATA	
+??019A . . . . . . . . . . . . .	Byte	 00001F39 _DATA	
+??019B . . . . . . . . . . . . .	Text   	 o
+??019C . . . . . . . . . . . . .	Byte	 00001F38 _DATA	
+??019D . . . . . . . . . . . . .	L Near	 00001799 _TEXT	
+??019E . . . . . . . . . . . . .	L Near	 000017CD _TEXT	
+??019F . . . . . . . . . . . . .	Byte	 00002074 _DATA	
+??01A0 . . . . . . . . . . . . .	Byte	 00002069 _DATA	
+??01A1 . . . . . . . . . . . . .	Text   	 "
+??01A2 . . . . . . . . . . . . .	Byte	 00002068 _DATA	
+??01A4 . . . . . . . . . . . . .	L Near	 00001813 _TEXT	
 ??CommonHeapElemSize . . . . . .	DWord	 00000004 _DATA	
 ??ConsoleMode  . . . . . . . . .	Byte	 00000008 _DATA	
 ??TotalHeapAllocated . . . . . .	DWord	 00000000 _DATA	
@@ -1592,7 +1265,7 @@ dos  . . . . . . . . . . . . . .	Text   	 DOS
 downloadfile . . . . . . . . . .	Text   	 DownloadFile
 elements1  . . . . . . . . . . .	Byte	 00000316 _DATA	
 elements2  . . . . . . . . . . .	Byte	 0000034B _DATA	
-exete  . . . . . . . . . . . . .	L Near	 00001A0E _TEXT	
+exete  . . . . . . . . . . . . .	L Near	 00001829 _TEXT	
 fmt  . . . . . . . . . . . . . .	Byte	 00000021 _DATA	
 gotoxy . . . . . . . . . . . . .	Text   	 gotoXY
 green  . . . . . . . . . . . . .	Number	 00000002h   
@@ -1612,12 +1285,12 @@ matr2  . . . . . . . . . . . . .	Word	 00000317 _DATA
 matr3  . . . . . . . . . . . . .	Word	 00000352 _DATA	
 maxMatrElement . . . . . . . . .	Byte	 000002E1 _DATA	
 msgbox . . . . . . . . . . . . .	Text   	 MsgBox
-mulElementsMatrixLoop  . . . . .	L Near	 00001517 _TEXT	
+mulElementsMatrixLoop  . . . . .	L Near	 00001509 _TEXT	
 mulElementsMatrix  . . . . . . .	L Near	 000014BF _TEXT	
-mulMatrixLoop1 . . . . . . . . .	L Near	 000015B5 _TEXT	
-mulMatrixLoop2 . . . . . . . . .	L Near	 000015BC _TEXT	
-mulMatrixLoop3 . . . . . . . . .	L Near	 000015CC _TEXT	
-mulMatrix  . . . . . . . . . . .	L Near	 00001570 _TEXT	
+mulMatrixLoop1 . . . . . . . . .	L Near	 000015B1 _TEXT	
+mulMatrixLoop2 . . . . . . . . .	L Near	 000015B8 _TEXT	
+mulMatrixLoop3 . . . . . . . . .	L Near	 000015C8 _TEXT	
+mulMatrix  . . . . . . . . . . .	L Near	 0000156C _TEXT	
 nil  . . . . . . . . . . . . . .	DWord 	 00000000h   
 num1 . . . . . . . . . . . . . .	Byte	 0000034D _DATA	
 num2 . . . . . . . . . . . . . .	Byte	 0000034E _DATA	
@@ -1632,14 +1305,13 @@ outu . . . . . . . . . . . . . .	Text   	 outword
 outwordLn  . . . . . . . . . . .	Text   	 outwordln
 plusMatrixLoop . . . . . . . . .	L Near	 00001335 _TEXT	
 plusMatrix . . . . . . . . . . .	L Near	 000012E6 _TEXT	
-printBig . . . . . . . . . . . .	L Near	 00001990 _TEXT	
-printLitle . . . . . . . . . . .	L Near	 000019CF _TEXT	
+printBig . . . . . . . . . . . .	L Near	 000017EA _TEXT	
 printMenue . . . . . . . . . . .	L Near	 00000D51 _TEXT	
 printOneMatrixLOOPcolumns  . . .	L Near	 00000831 _TEXT	
 printOneMatrixLOOPline . . . . .	L Near	 0000081B _TEXT	
 printOneMatrix . . . . . . . . .	L Near	 000007F5 _TEXT	
-printOverMax1  . . . . . . . . .	L Near	 00001836 _TEXT	
-printOverMax2  . . . . . . . . .	L Near	 000018E3 _TEXT	
+printOverMax1  . . . . . . . . .	L Near	 00001690 _TEXT	
+printOverMax2  . . . . . . . . .	L Near	 0000173D _TEXT	
 printThreMatrixLOOPcolumns . . .	L Near	 0000138D _TEXT	
 printThreMatrixLOOPline  . . . .	L Near	 00001386 _TEXT	
 printThreMatrix  . . . . . . . .	L Near	 00001362 _TEXT	
